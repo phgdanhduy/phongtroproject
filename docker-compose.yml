@@ -1,44 +1,55 @@
+version: '3.8'
+
 services:
-  postgres:
+  # 1. Database: PostgreSQL
+  postgres_db:
     image: postgres:15-alpine
-    container_name: phongtro_postgres
+    container_name: vnu_living_postgres
+    restart: always
     environment:
-      POSTGRES_DB: phongtro_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${DB_USER:-vnu_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vnu_secret_2026}
+      POSTGRES_DB: ${DB_NAME:-vnu_living_db}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-      - ./backend/src/database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d phongtro_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
+      # Tự động chạy script SQL tạo bảng khi khởi chạy container lần đầu
+      - ./docs/db-schema-phase1.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # 2. Backend: Node.js (Express / NestJS)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: phongtro_backend
-    environment:
-      PORT: 5000
-      NODE_ENV: production
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: phongtro_db
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      JWT_SECRET: vnu_living_secret_key_2026_baseline
-      JWT_EXPIRES_IN: 7d
+    container_name: vnu_living_backend
+    restart: always
     ports:
-      - "5000:5000"
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres_db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-vnu_admin}
+      DB_PASSWORD: ${DB_PASSWORD:-vnu_secret_2026}
+      DB_NAME: ${DB_NAME:-vnu_living_db}
+      JWT_SECRET: ${JWT_SECRET:-vnu_jwt_secret_key_phase1}
+      ALLOWED_EMAIL_DOMAIN: vnu.edu.vn
     depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
+      - postgres_db
+
+  # 3. Frontend (React / Vite / Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vnu_living_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
-  pgdata:
+  postgres_data:
