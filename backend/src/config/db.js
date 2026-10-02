@@ -3,12 +3,13 @@ const fs = require('fs');
 const path = require('path');
 
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME || 'phongtro_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  host: process.env.DB_HOST || 'postgres_db',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'vnu_admin',
+  password: process.env.DB_PASSWORD || 'vnu_secret_2026',
+  database: process.env.DB_NAME || 'vnu_living_db',
 });
+module.exports = pool;
 
 pool.on('error', (err) => {
   console.error('[Database Pool Error]:', err);
