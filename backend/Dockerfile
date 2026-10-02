@@ -1,16 +1,20 @@
-FROM node:20-alpine
+# Sử dụng Node.js bản Lightweight LTS
+FROM node:18-alpine
 
-WORKDIR /app
+# Thiết lập thư mục làm việc trong container
+WORKDIR /usr/src/app
 
-# Copy dependency files
+# Sao chép file package.json và package-lock.json để cài dependencies
 COPY package*.json ./
 
-# Install production dependencies
-RUN npm ci --only=production
+# Cài đặt thư viện
+RUN npm install
 
-# Copy source code
+# Sao chép toàn bộ mã nguồn backend vào container
 COPY . .
 
-EXPOSE 5000
+# Mở cổng 3000
+EXPOSE 3000
 
-CMD ["node", "src/server.js"]
+# Lệnh khởi chạy server Node.js
+CMD ["npm", "run", "dev"]
