@@ -1,9 +1,12 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { authApi } from "../services/api";
 
 export default function Layout() {
   const navigate = useNavigate();
+  const user = authApi.getUser();
 
   const handleLogout = () => {
+    authApi.logout();
     navigate("/login");
   };
 
@@ -14,7 +17,12 @@ export default function Layout() {
           <div className="brand-icon">VNU</div>
           <div>
             <h1>VNU Living</h1>
-            <p>Student housing hub</p>
+            <p>{user?.fullName ? `${user.fullName}` : "Student housing hub"}</p>
+            {user?.studentId && (
+              <span style={{ fontSize: "0.75rem", opacity: 0.8, color: "var(--accent, #4f46e5)" }}>
+                MSSV: {user.studentId}
+              </span>
+            )}
           </div>
         </div>
 

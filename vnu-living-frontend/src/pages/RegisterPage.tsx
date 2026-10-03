@@ -1,16 +1,19 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { authApi } from "../services/api";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
     name: "",
+    studentId: "",
     email: "",
     password: ""
   });
 
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function updateField(
     field: keyof typeof form,
@@ -22,11 +25,16 @@ export default function RegisterPage() {
     }));
   }
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
 
     if (!form.email.endsWith("@vnu.edu.vn")) {
       setError("Email phải có đuôi @vnu.edu.vn");
+      return;
+    }
+
+    if (!form.studentId.trim()) {
+      setError("Vui lòng nhập Mã sinh viên (MSSV).");
       return;
     }
 
@@ -35,8 +43,30 @@ export default function RegisterPage() {
       return;
     }
 
-    setError("");
-    navigate("/onboarding");
+    try {
+      setLoading(true);
+      setError("");
+      const res = await authApi.register({
+        fullName: form.name,
+        studentId: form.studentId,
+        email: form.email,
+        password: form.password
+      });
+
+      if (!res.success) {
+        setError(res.message || "Đăng ký thất bại");
+        return;
+      }
+
+      if (res.data) {
+        authApi.setSession(res.data.token, res.data.user);
+      }
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Lỗi kết nối tới Backend API");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -55,7 +85,7 @@ export default function RegisterPage() {
         <h2>Tạo tài khoản</h2>
 
         <p className="muted">
-          Bắt đầu thiết lập hồ sơ sống của bạn.
+          Đăng ký tài khoản sinh viên và lưu trực tiếp vào cơ sở dữ liệu.
         </p>
 
         {error && (
@@ -78,7 +108,20 @@ export default function RegisterPage() {
         </label>
 
         <label>
-          Email sinh viên
+          Mã số sinh viên (MSSV)
+
+          <input
+            required
+            value={form.studentId}
+            onChange={(e) =>
+              updateField("studentId", e.target.value)
+            }
+            placeholder="22020001"
+          />
+        </label>
+
+        <label>
+          Email sinh viên (@vnu.edu.vn)
 
           <input
             required
@@ -102,14 +145,16 @@ export default function RegisterPage() {
             onChange={(e) =>
               updateField("password", e.target.value)
             }
+            placeholder="Tối thiểu 6 ký tự"
           />
         </label>
 
         <button
           className="btn btn-primary full"
           type="submit"
+          disabled={loading}
         >
-          Tạo tài khoản
+          {loading ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
         </button>
 
         <p className="auth-switch">

@@ -1,93 +1,141 @@
-import { FormEvent, useState } from "react";
-
+import { FormEvent, useEffect, useState } from "react";
 import PageHeader from "../components/PageHeader";
+import { roomApi } from "../services/api";
 
-type Campus = "hoa-lac" | "noi-thanh";
-
-type RoomMember = {
-  id: string;
+interface RoomData {
+  id: number;
   name: string;
-  email: string;
-};
-
-type Room = {
-  id: string;
-  name: string;
-  capacity: number;
-  campus: Campus;
-  members: RoomMember[];
-};
-
-const initialRoom: Room = {
-  id: "room-1",
-  name: "Phòng VNU 001",
-  capacity: 4,
-  campus: "noi-thanh",
-  members: [
-    {
-      id: "u1",
-      name: "Nguyễn Thanh Hưng",
-      email: "hungnt@vnu.edu.vn"
-    },
-    {
-      id: "u2",
-      name: "Nguyễn Minh Anh",
-      email: "minhanh@vnu.edu.vn"
-    }
-  ]
-};
+  campus: "HOA_LAC" | "NOI_THANH";
+  addressOrBlock: string | null;
+  members: Array<{
+    userId: number;
+    fullName: string;
+    studentId: string;
+    role: string;
+  }>;
+}
 
 export default function RoomPage() {
-  const [room, setRoom] = useState(initialRoom);
+  const [room, setRoom] = useState<RoomData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
+  const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     name: "",
-    capacity: 4,
-    campus: "noi-thanh" as Campus
+    campus: "HOA_LAC" as "HOA_LAC" | "NOI_THANH",
+    addressOrBlock: ""
   });
 
-  function createRoom(e: FormEvent) {
+  useEffect(() => {
+    loadMyRoom();
+  }, []);
+
+  async function loadMyRoom() {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await roomApi.getMyRoom();
+      if (res.success && res.data) {
+        setRoom(res.data);
+      } else {
+        setRoom(null);
+      }
+    } catch (err: any) {
+      setError(err.message || "Lỗi tải thông tin phòng");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateRoom(e: FormEvent) {
     e.preventDefault();
+    if (!form.name.trim()) {
+      setError("Vui lòng nhập tên phòng");
+      return;
+    }
 
-    const newRoom: Room = {
-      id: "room-preview",
-      name: form.name || "Phòng VNU mới",
-      capacity: form.capacity,
-      campus: form.campus,
-      members: [
-        {
-          id: "u1",
-          name: "Nguyễn Thanh Hưng",
-          email: "hungnt@vnu.edu.vn"
-        }
-      ]
-    };
+    try {
+      setError("");
+      setMsg("");
+      const res = await roomApi.createRoom({
+        name: form.name,
+        campus: form.campus,
+        addressOrBlock: form.addressOrBlock
+      });
 
-    setRoom(newRoom);
-    setCreating(false);
+      if (!res.success) {
+        setError(res.message || "Tạo phòng thất bại");
+        return;
+      }
+
+      setMsg("✅ Tạo phòng thành công!");
+      setCreating(false);
+      loadMyRoom();
+    } catch (err: any) {
+      setError(err.message || "Lỗi kết nối");
+    }
+  }
+
+  async function handleAddMember(e: FormEvent) {
+    e.preventDefault();
+    if (!room || !memberEmail.trim()) return;
+
+    try {
+      setError("");
+      setMsg("");
+      const res = await roomApi.addMember(room.id, memberEmail.trim());
+      if (!res.success) {
+        setError(res.message || "Không thể thêm thành viên");
+        return;
+      }
+
+      setMsg("✅ Đã thêm thành viên vào phòng thành công!");
+      setMemberEmail("");
+      setAddingMember(false);
+      loadMyRoom();
+    } catch (err: any) {
+      setError(err.message || "Lỗi kết nối");
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+        Đang nạp dữ liệu phòng từ Database Docker...
+      </div>
+    );
   }
 
   return (
     <>
       <PageHeader
         title="Phòng của tôi"
-        description="Quản lý không gian sống và thành viên."
+        description="Quản lý phòng trọ và thành viên trong Database PostgreSQL."
         action={
-          <button
-            className="btn btn-primary"
-            onClick={() => setCreating(!creating)}
-          >
-            {creating ? "Đóng" : "Tạo phòng trọ"}
-          </button>
+          !room && (
+            <button
+              className="btn btn-primary"
+              onClick={() => setCreating(!creating)}
+            >
+              {creating ? "Đóng" : "Tạo phòng trọ mới"}
+            </button>
+          )
         }
       />
 
+      {msg && <div className="alert success">{msg}</div>}
+      {error && <div className="alert error">{error}</div>}
+
       {creating && (
-        <form className="card inline-form" onSubmit={createRoom}>
+        <form className="card inline-form" onSubmit={handleCreateRoom} style={{ marginBottom: "20px" }}>
           <label>
-            Tên phòng
+            Tên phòng / KTX
             <input
+              required
               value={form.name}
               onChange={(e) =>
                 setForm({
@@ -95,82 +143,116 @@ export default function RoomPage() {
                   name: e.target.value
                 })
               }
-              placeholder="Phòng VNU 002"
+              placeholder="VD: Phòng 402 - KTX QGHN"
             />
           </label>
 
           <label>
-            Số người
-            <select
-              value={form.capacity}
+            Địa chỉ / Tòa nhà
+            <input
+              value={form.addressOrBlock}
               onChange={(e) =>
                 setForm({
                   ...form,
-                  capacity: Number(e.target.value)
+                  addressOrBlock: e.target.value
                 })
               }
-            >
-              <option value="4">4 người</option>
-              <option value="6">6 người</option>
-              <option value="8">8 người</option>
-            </select>
+              placeholder="VD: Nhà B4, Thạch Thất"
+            />
           </label>
 
           <label>
-            Cơ sở
+            Khu vực
             <select
               value={form.campus}
               onChange={(e) =>
                 setForm({
                   ...form,
-                  campus: e.target.value as Campus
+                  campus: e.target.value as "HOA_LAC" | "NOI_THANH"
                 })
               }
             >
-              <option value="noi-thanh">Nội thành</option>
-              <option value="hoa-lac">Hòa Lạc</option>
+              <option value="HOA_LAC">Hòa Lạc</option>
+              <option value="NOI_THANH">Nội thành Hà Nội</option>
             </select>
           </label>
 
           <button className="btn btn-primary" type="submit">
-            Tạo
+            Tạo phòng vào DB
           </button>
         </form>
       )}
 
-      <section className="room-detail card">
-        <div className="room-detail-head">
-          <div>
-            <span className="eyebrow">LIVING SPACE</span>
+      {room ? (
+        <section className="room-detail card">
+          <div className="room-detail-head">
+            <div>
+              <span className="eyebrow">PHÒNG ĐÃ THAM GIA</span>
+              <h2>{room.name}</h2>
+              <p>
+                {room.campus === "HOA_LAC" ? "Cơ sở Hòa Lạc" : "Nội thành"}
+                {room.addressOrBlock ? ` · ${room.addressOrBlock}` : ""}
+                {` · ${room.members?.length || 0} thành viên`}
+              </p>
+            </div>
 
-            <h2>{room.name}</h2>
-
-            <p>
-              {room.campus === "hoa-lac"
-                ? "KTX Hòa Lạc"
-                : "Thuê trọ nội thành"}{" "}
-              · {room.members.length}/{room.capacity} thành viên
-            </p>
+            <div className="room-icon big">⌂</div>
           </div>
 
-          <div className="room-icon big">⌂</div>
-        </div>
+          <div style={{ margin: "16px 0", display: "flex", gap: "10px", alignItems: "center" }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => setAddingMember(!addingMember)}
+            >
+              {addingMember ? "Hủy" : "+ Mời thêm bạn vào phòng"}
+            </button>
+          </div>
 
-        <div className="member-grid">
-          {room.members.map((member) => (
-            <div className="member-card" key={member.id}>
-              <div className="avatar">
-                {member.name.charAt(0)}
-              </div>
+          {addingMember && (
+            <form onSubmit={handleAddMember} style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+              <input
+                required
+                type="email"
+                placeholder="Nhập email VNU của bạn (VD: student2@vnu.edu.vn)"
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid #ccc" }}
+              />
+              <button className="btn btn-primary" type="submit">
+                Thêm vào phòng
+              </button>
+            </form>
+          )}
 
-              <div>
-                <strong>{member.name}</strong>
-                <span>{member.email}</span>
+          <h4 style={{ marginTop: "16px" }}>Danh sách thành viên trong phòng (Lưu từ DB):</h4>
+          <div className="member-grid">
+            {room.members?.map((member) => (
+              <div className="member-card" key={member.userId}>
+                <div className="avatar">
+                  {member.fullName ? member.fullName.charAt(0).toUpperCase() : "U"}
+                </div>
+
+                <div>
+                  <strong>{member.fullName}</strong>
+                  <span>MSSV: {member.studentId} · <b>{member.role}</b></span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      ) : (
+        !creating && (
+          <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+            <h3>Bạn hiện chưa tham gia phòng trọ nào.</h3>
+            <p className="muted" style={{ margin: "10px 0 20px" }}>
+              Bạn có thể tạo một phòng mới hoặc chờ bạn cùng phòng thêm bạn vào phòng bằng email.
+            </p>
+            <button className="btn btn-primary" onClick={() => setCreating(true)}>
+              + Tạo phòng mới ngay
+            </button>
+          </div>
+        )
+      )}
     </>
   );
 }

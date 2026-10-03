@@ -1,209 +1,278 @@
-import { FormEvent, useMemo, useState } from "react";
-
+import { FormEvent, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
+import { expenseApi, roomApi } from "../services/api";
 
-type Expense = {
-  id: string;
-  name: string;
+interface ExpenseItem {
+  id: number;
+  title: string;
   amount: number;
-  payer: string;
-  date: string;
-};
+  category: string;
+  payer: {
+    id: number;
+    fullName: string;
+  };
+  createdAt: string;
+}
 
-const initialExpenses: Expense[] = [
-  {
-    id: "e1",
-    name: "Tiền điện",
-    amount: 450000,
-    payer: "Nguyễn Thanh Hưng",
-    date: "2026-10-01"
-  },
-  {
-    id: "e2",
-    name: "Tiền nước",
-    amount: 120000,
-    payer: "Nguyễn Minh Anh",
-    date: "2026-10-01"
-  },
-  {
-    id: "e3",
-    name: "Internet",
-    amount: 200000,
-    payer: "Nguyễn Thanh Hưng",
-    date: "2026-10-01"
-  }
-];
-
-const members = [
-  "Nguyễn Thanh Hưng",
-  "Nguyễn Minh Anh"
-];
+interface BalanceItem {
+  userId: number;
+  fullName: string;
+  totalPaid: number;
+  totalOwed: number;
+  netBalance: number;
+}
 
 export default function ExpensesPage() {
-  const [expenses, setExpenses] =
-    useState(initialExpenses);
+  const [roomId, setRoomId] = useState<number | null>(null);
+  const [roomName, setRoomName] = useState("");
+  const [members, setMembers] = useState<Array<{ userId: number; fullName: string }>>([]);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [balances, setBalances] = useState<BalanceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    name: "",
+    title: "",
     amount: "",
-    payer: members[0],
-    date: new Date().toISOString().slice(0, 10)
+    category: "LIVING",
+    payerId: 0
   });
 
-  const total = useMemo(
-    () =>
-      expenses.reduce(
-        (sum, item) => sum + item.amount,
-        0
-      ),
-    [expenses]
-  );
+  useEffect(() => {
+    loadRoomAndExpenses();
+  }, []);
 
-  const equalShare =
-    members.length > 0
-      ? Math.round(total / members.length)
-      : 0;
+  async function loadRoomAndExpenses() {
+    try {
+      setLoading(true);
+      setError("");
+      const roomRes = await roomApi.getMyRoom();
+      if (roomRes.success && roomRes.data) {
+        const r = roomRes.data;
+        setRoomId(r.id);
+        setRoomName(r.name);
+        setMembers(r.members || []);
+        if (r.members && r.members.length > 0) {
+          setForm((curr) => ({ ...curr, payerId: r.members[0].userId }));
+        }
 
-  function submit(e: FormEvent) {
+        await fetchExpensesAndBalances(r.id);
+      } else {
+        setRoomId(null);
+      }
+    } catch (err: any) {
+      setError(err.message || "Lỗi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchExpensesAndBalances(rId: number) {
+    try {
+      const [expRes, balRes] = await Promise.all([
+        expenseApi.getExpenses(rId),
+        expenseApi.getBalances(rId)
+      ]);
+
+      if (expRes.success && Array.isArray(expRes.data)) {
+        setExpenses(expRes.data);
+      }
+      if (balRes.success && (balRes.data?.memberBalances || balRes.data?.balances)) {
+        setBalances(balRes.data.memberBalances || balRes.data.balances);
+      }
+    } catch (e: any) {
+      console.error("Error loading expenses/balances:", e);
+    }
+  }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!roomId) return;
 
-    const amount = Number(form.amount);
-
-    if (!form.name.trim() || amount <= 0) {
+    const amt = Number(form.amount);
+    if (!form.title.trim() || amt <= 0) {
+      setError("Vui lòng nhập tên khoản chi và số tiền hợp lệ (> 0)");
       return;
     }
 
-    const newExpense: Expense = {
-      id: `expense-${Date.now()}`,
-      name: form.name,
-      amount,
-      payer: form.payer,
-      date: form.date
-    };
+    try {
+      setSaving(true);
+      setError("");
+      setMsg("");
 
-    setExpenses((current) => [
-      newExpense,
-      ...current
-    ]);
+      const res = await expenseApi.createExpense(roomId, {
+        title: form.title,
+        amount: amt,
+        category: form.category,
+        splitWith: members.map((m) => m.userId)
+      });
 
-    setForm({
-      name: "",
-      amount: "",
-      payer: members[0],
-      date: new Date().toISOString().slice(0, 10)
-    });
+      if (!res.success) {
+        setError(res.message || "Không thể tạo khoản chi");
+        return;
+      }
+
+      setMsg("✅ Đã lưu khoản chi và tính toán chia tiền tự động!");
+      setForm((curr) => ({ ...curr, title: "", amount: "" }));
+      await fetchExpensesAndBalances(roomId);
+    } catch (err: any) {
+      setError(err.message || "Lỗi kết nối Backend");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const total = expenses.reduce((sum, item) => sum + item.amount, 0);
+  const equalShare = members.length > 0 ? Math.round(total / members.length) : 0;
+
+  if (loading) {
+    return (
+      <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+        Đang nạp chi phí và bảng tính chia tiền từ Database Docker...
+      </div>
+    );
+  }
+
+  if (!roomId) {
+    return (
+      <>
+        <PageHeader
+          title="Chi phí phòng"
+          description="Quản lý chi tiêu và tính toán số dư tự động."
+        />
+        <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+          <h3>Bạn chưa tham gia phòng trọ nào để quản lý chi phí.</h3>
+          <p className="muted" style={{ margin: "12px 0 20px" }}>
+            Vui lòng tạo hoặc tham gia phòng trước để bắt đầu thêm hóa đơn điện, nước, tiền nhà.
+          </p>
+          <Link className="btn btn-primary" to="/room">
+            Đi đến trang Phòng của tôi
+          </Link>
+        </div>
+      </>
+    );
   }
 
   return (
     <>
       <PageHeader
-        title="Chi phí phòng"
-        description="Giao diện nhập khoản chi và xem chia đều giữa các thành viên."
+        title={`Chi phí phòng: ${roomName}`}
+        description="Tính toán chia tiền tự động và lưu trữ vào PostgreSQL Database."
       />
 
+      {msg && <div className="alert success">{msg}</div>}
+      {error && <div className="alert error">{error}</div>}
+
       <div className="expense-layout">
-        <form className="card expense-form" onSubmit={submit}>
-          <span className="eyebrow">THÊM KHOẢN CHI</span>
+        <form className="card expense-form" onSubmit={handleSubmit}>
+          <span className="eyebrow">THÊM KHOẢN CHI VÀO DB</span>
 
           <label>
             Tên khoản chi
             <input
-              value={form.name}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  name: e.target.value
-                })
-              }
-              placeholder="Tiền điện, tiền nước..."
               required
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Tiền điện, nước, internet..."
             />
           </label>
 
           <label>
-            Số tiền
+            Số tiền (VNĐ)
             <input
-              type="number"
-              min="1"
-              value={form.amount}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  amount: e.target.value
-                })
-              }
-              placeholder="500000"
               required
+              type="number"
+              min="1000"
+              step="1000"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              placeholder="VD: 500000"
             />
           </label>
 
           <label>
-            Người thanh toán
+            Phân loại
             <select
-              value={form.payer}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  payer: e.target.value
-                })
-              }
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
             >
-              {members.map((member) => (
-                <option key={member}>
-                  {member}
+              <option value="RENT">Tiền thuê phòng</option>
+              <option value="ELECTRICITY">Tiền điện</option>
+              <option value="WATER">Tiền nước</option>
+              <option value="INTERNET">Internet / Wifi</option>
+              <option value="LIVING">Sinh hoạt chung</option>
+            </select>
+          </label>
+
+          <label>
+            Người đứng ra trả trước
+            <select
+              value={form.payerId}
+              onChange={(e) => setForm({ ...form, payerId: Number(e.target.value) })}
+            >
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.fullName}
                 </option>
               ))}
             </select>
           </label>
 
-          <label>
-            Ngày
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  date: e.target.value
-                })
-              }
-              required
-            />
-          </label>
-
-          <button className="btn btn-primary" type="submit">
-            Thêm khoản chi
+          <button className="btn btn-primary" type="submit" disabled={saving}>
+            {saving ? "Đang lưu vào DB..." : "Lưu khoản chi & Tự động chia"}
           </button>
         </form>
 
         <section className="card expense-summary">
-          <span className="eyebrow">EQUAL SPLIT</span>
+          <span className="eyebrow">TỔNG QUAN CHIA ĐỀU (EQUAL SPLIT)</span>
 
           <h2>{total.toLocaleString("vi-VN")}đ</h2>
 
           <p className="muted">
-            Tổng chi phí hiện tại của phòng.
+            Tổng chi phí cả phòng cho {members.length} thành viên.
           </p>
 
           <div className="split-box">
-            <span>Mỗi thành viên cần trả</span>
-            <strong>
-              {equalShare.toLocaleString("vi-VN")}đ
-            </strong>
+            <span>Mỗi người chịu trách nhiệm</span>
+            <strong>{equalShare.toLocaleString("vi-VN")}đ</strong>
           </div>
 
-          <p className="muted">
-            Đây là phần hiển thị giao diện. Khi backend hoàn thành,
-            dữ liệu và kết quả chia tiền sẽ được lấy từ API.
-          </p>
+          <h4 style={{ marginTop: "16px", marginBottom: "8px" }}>Số dư thanh toán từng người (Từ Backend):</h4>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {balances.map((b) => (
+              <div
+                key={b.userId}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  padding: "8px",
+                  borderRadius: "6px",
+                  background: "var(--surface-variant, #f3f4f6)"
+                }}
+              >
+                <span><b>{b.fullName}</b> (Đã trả {b.totalPaid.toLocaleString()}đ)</span>
+                <span
+                  style={{
+                    color: b.netBalance >= 0 ? "#16a34a" : "#dc2626",
+                    fontWeight: "bold"
+                  }}
+                >
+                  {b.netBalance >= 0 ? `+Nhận lại ${b.netBalance.toLocaleString()}đ` : `Cần trả ${Math.abs(b.netBalance).toLocaleString()}đ`}
+                </span>
+              </div>
+            ))}
+          </div>
         </section>
       </div>
 
-      <section className="card">
+      <section className="card" style={{ marginTop: "24px" }}>
         <div className="section-head">
           <div>
-            <span className="eyebrow">DANH SÁCH KHOẢN CHI</span>
-            <h3>Chi phí đã nhập</h3>
+            <span className="eyebrow">DANH SÁCH HÓA ĐƠN TRONG DB</span>
+            <h3>Khoản chi đã ghi nhận ({expenses.length})</h3>
           </div>
         </div>
 
@@ -211,17 +280,21 @@ export default function ExpensesPage() {
           {expenses.map((expense) => (
             <div className="expense-item" key={expense.id}>
               <div>
-                <strong>{expense.name}</strong>
+                <strong>{expense.title}</strong>
                 <p className="muted">
-                  {expense.payer} · {expense.date}
+                  Người trả: {expense.payer?.fullName || "Thành viên"} · {new Date(expense.createdAt).toLocaleDateString("vi-VN")} · Loại: {expense.category}
                 </p>
               </div>
 
-              <span>
-                {expense.amount.toLocaleString("vi-VN")}đ
-              </span>
+              <span>{expense.amount.toLocaleString("vi-VN")}đ</span>
             </div>
           ))}
+
+          {expenses.length === 0 && (
+            <div className="empty" style={{ padding: "20px", textAlign: "center" }}>
+              Chưa có khoản chi nào được thêm vào phòng này.
+            </div>
+          )}
         </div>
       </section>
     </>

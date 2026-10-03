@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-vnu_secret_2026}
       POSTGRES_DB: ${DB_NAME:-vnu_living_db}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Tự động chạy script SQL tạo bảng khi khởi chạy container lần đầu
@@ -25,7 +25,7 @@ services:
     container_name: vnu_living_backend
     restart: always
     ports:
-      - "3000:3000"
+      - "5000:3000"
     environment:
       NODE_ENV: development
       PORT: 3000
@@ -42,7 +42,7 @@ services:
   # 3. Frontend (React / Vite / Next.js)
   frontend:
     build:
-      context: ./frontend
+      context: ./vnu-living-frontend
       dockerfile: Dockerfile
     container_name: vnu_living_frontend
     restart: always

@@ -1,79 +1,63 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
 import PageHeader from "../components/PageHeader";
+import { roommateApi } from "../services/api";
 
-type Campus = "hoa-lac" | "noi-thanh";
+type CampusFilter = "ALL" | "HOA_LAC" | "NOI_THANH";
 
-type Roommate = {
-  id: string;
-  name: string;
-  faculty: string;
-  cohort: string;
-  campus: Campus;
-  sleepTime: string;
-  cleanliness: number;
-  noiseSensitivity: number;
-  compatibility: number;
-};
-
-const sampleRoommates: Roommate[] = [
-  {
-    id: "u1",
-    name: "Nguyễn Minh Anh",
-    faculty: "Công nghệ thông tin",
-    cohort: "K68",
-    campus: "noi-thanh",
-    sleepTime: "23:00",
-    cleanliness: 4,
-    noiseSensitivity: 3,
-    compatibility: 92
-  },
-  {
-    id: "u2",
-    name: "Trần Hoàng Nam",
-    faculty: "Điện tử Viễn thông",
-    cohort: "K67",
-    campus: "hoa-lac",
-    sleepTime: "22:30",
-    cleanliness: 5,
-    noiseSensitivity: 4,
-    compatibility: 88
-  },
-  {
-    id: "u3",
-    name: "Phạm Gia Huy",
-    faculty: "Công nghệ thông tin",
-    cohort: "K69",
-    campus: "noi-thanh",
-    sleepTime: "00:00",
-    cleanliness: 3,
-    noiseSensitivity: 2,
-    compatibility: 81
-  }
-];
+interface RoommateItem {
+  userId: number;
+  fullName: string;
+  studentId: string;
+  faculty: string | null;
+  cohort: string | null;
+  campus: "HOA_LAC" | "NOI_THANH";
+  locationDetail: string | null;
+  budget: number;
+  habits: {
+    sleepSchedule: "EARLY" | "NIGHT_OWL";
+    cleanliness: number;
+    noiseLevel: "QUIET" | "NORMAL";
+    smoking: boolean;
+    hasPet: boolean;
+  };
+  bio: string | null;
+}
 
 export default function RoommatesPage() {
-  const [campus, setCampus] = useState<Campus>("noi-thanh");
-  const [cohort, setCohort] = useState("all");
-  const [faculty, setFaculty] = useState("all");
+  const [campus, setCampus] = useState<CampusFilter>("ALL");
+  const [roommates, setRoommates] = useState<RoommateItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const roommates = useMemo(
-    () =>
-      sampleRoommates.filter(
-        (person) =>
-          person.campus === campus &&
-          (cohort === "all" || person.cohort === cohort) &&
-          (faculty === "all" || person.faculty === faculty)
-      ),
-    [campus, cohort, faculty]
-  );
+  useEffect(() => {
+    fetchRoommates();
+  }, [campus]);
+
+  async function fetchRoommates() {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await roommateApi.getRoommates({
+        campus: campus === "ALL" ? undefined : campus,
+      });
+      if (res.success && Array.isArray(res.data)) {
+        setRoommates(res.data);
+      } else {
+        setError(res.message || "Không thể tải danh sách");
+      }
+    } catch (err: any) {
+      setError(err.message || "Lỗi kết nối");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <>
       <PageHeader
         title="Tìm bạn cùng phòng"
-        description="Lọc những sinh viên có thông tin phù hợp với bạn."
+        description="Dữ liệu đồng bộ trực tiếp từ Database PostgreSQL Docker."
         action={
           <Link className="btn btn-primary" to="/room">
             Tạo phòng trọ
@@ -84,76 +68,63 @@ export default function RoommatesPage() {
       <div className="filter-bar">
         <select
           value={campus}
-          onChange={(e) => setCampus(e.target.value as Campus)}
+          onChange={(e) => setCampus(e.target.value as CampusFilter)}
         >
-          <option value="noi-thanh">Nội thành</option>
-          <option value="hoa-lac">Hòa Lạc</option>
-        </select>
-
-        <select
-          value={cohort}
-          onChange={(e) => setCohort(e.target.value)}
-        >
-          <option value="all">Tất cả khóa</option>
-          {["K67", "K68", "K69"].map((x) => (
-            <option key={x}>{x}</option>
-          ))}
-        </select>
-
-        <select
-          value={faculty}
-          onChange={(e) => setFaculty(e.target.value)}
-        >
-          <option value="all">Tất cả khoa</option>
-          <option>Công nghệ thông tin</option>
-          <option>Điện tử Viễn thông</option>
-          <option>Công nghệ</option>
+          <option value="ALL">Tất cả cơ sở</option>
+          <option value="HOA_LAC">Hòa Lạc</option>
+          <option value="NOI_THANH">Nội thành</option>
         </select>
 
         <span className="result-count">
-          {roommates.length} kết quả
+          {loading ? "Đang tải..." : `${roommates.length} sinh viên`}
         </span>
       </div>
 
+      {error && <div className="alert error">{error}</div>}
+
       <div className="roommate-grid">
         {roommates.map((person) => (
-          <article className="roommate-card" key={person.id}>
+          <article className="roommate-card" key={person.userId}>
             <div className="roommate-top">
               <div className="avatar large">
-                {person.name.charAt(0)}
+                {person.fullName ? person.fullName.charAt(0).toUpperCase() : "U"}
               </div>
 
               <span className="compatibility">
-                {person.compatibility}% phù hợp
+                MSSV: {person.studentId}
               </span>
             </div>
 
-            <h3>{person.name}</h3>
+            <h3>{person.fullName || "Sinh viên VNU"}</h3>
 
             <p>
-              {person.faculty} · {person.cohort}
+              {person.faculty || "Chưa cập nhật khoa"} · {person.cohort || "K6x"}
             </p>
 
             <div className="habit-tags">
-              <span>Ngủ {person.sleepTime}</span>
-              <span>Sạch sẽ {person.cleanliness}/5</span>
-              <span>Ồn {person.noiseSensitivity}/5</span>
+              <span>{person.campus === "HOA_LAC" ? "Hòa Lạc" : "Nội thành"}</span>
+              <span>{person.habits?.sleepSchedule === "EARLY" ? "Ngủ sớm" : "Cú đêm"}</span>
+              <span>Sạch sẽ {person.habits?.cleanliness || 4}/5</span>
+              <span>Ngân sách: {Number(person.budget || 0).toLocaleString()} đ</span>
             </div>
+
+            {person.bio && <p className="muted" style={{ marginTop: "8px", fontSize: "0.85rem" }}>"{person.bio}"</p>}
 
             <button
               className="btn btn-outline full"
+              style={{ marginTop: "12px" }}
               onClick={() =>
-                alert(`Đã gửi lời mời kết nối tới ${person.name}`)
+                alert(`Đã gửi yêu cầu ghép phòng tới ${person.fullName}!`)
               }
             >
-              Gửi lời mời
+              Gửi lời mời ghép phòng
             </button>
           </article>
         ))}
 
-        {roommates.length === 0 && (
+        {!loading && roommates.length === 0 && (
           <div className="empty card">
-            Không có profile phù hợp với bộ lọc hiện tại.
+            Không có sinh viên nào phù hợp với bộ lọc này.
           </div>
         )}
       </div>

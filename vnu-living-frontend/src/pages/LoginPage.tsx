@@ -1,14 +1,16 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { authApi } from "../services/api";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("hungnt@vnu.edu.vn");
-  const [password, setPassword] = useState("123456");
+  const [email, setEmail] = useState("student1@vnu.edu.vn");
+  const [password, setPassword] = useState("Password123@");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
 
     if (!email.endsWith("@vnu.edu.vn")) {
@@ -21,8 +23,25 @@ export default function LoginPage() {
       return;
     }
 
-    setError("");
-    navigate("/dashboard");
+    try {
+      setLoading(true);
+      setError("");
+      const res = await authApi.login({ email, password });
+
+      if (!res.success) {
+        setError(res.message || "Email hoặc mật khẩu không chính xác.");
+        return;
+      }
+
+      if (res.data) {
+        authApi.setSession(res.data.token, res.data.user);
+      }
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Không thể kết nối đến máy chủ.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -51,7 +70,7 @@ export default function LoginPage() {
         </div>
 
         <div className="feature-row">
-          <span>✓ Email VNU</span>
+          <span>✓ Xác thực PostgreSQL Docker</span>
         </div>
       </div>
 
@@ -105,8 +124,9 @@ export default function LoginPage() {
           <button
             className="btn btn-primary full"
             type="submit"
+            disabled={loading}
           >
-            Đăng nhập
+            {loading ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
           <p className="auth-switch">
