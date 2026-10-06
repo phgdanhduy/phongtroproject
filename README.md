@@ -7,50 +7,71 @@
 ## 🌟 1. Giới thiệu dự án
 Hệ thống **VNU Living & Expense Hub** giải quyết 2 bài toán cốt lõi trong đời sống sinh viên Đại học Quốc gia Hà Nội:
 1. **Tìm bạn cùng phòng (Roommate Matching):** Dựa trên hồ sơ thói quen sinh hoạt (Profile Vector) và phân luồng cơ sở (**KTX Hòa Lạc** vs **Nội thành Hà Nội**), lọc theo ngân sách, độ sạch sẽ, giờ ngủ, tiếng ồn.
-2. **Quản lý phòng & Chia chi phí (Living & Expense):** Quản lý thành viên phòng trọ, thêm hóa đơn điện/nước/internet/tiền nhà và tự động tính toán số dư chia đều (**Equal Split** & **Balance Calculation**).
+2. **Quản lý phòng & Chia chi phí (Living & Expense Hub):** Quản lý thành viên phòng trọ, thêm hóa đơn điện/nước/internet/tiền nhà và tự động tính toán số dư chia đều (**Equal Split Engine** & **Room Balances Summary**).
 
 ---
 
 ## 🛠️ 2. Công nghệ sử dụng
 * **Front-End:** React 19, TypeScript, Vite, React Router v7, Vanilla CSS, Nginx
-* **Back-End:** Node.js (Express), PostgreSQL Client (`pg`), JWT, Bcrypt
+* **Back-End:** Node.js (Express), RESTful API, PostgreSQL Client (`pg`), JWT, Bcrypt
+* **Tài liệu API:** OpenAPI 3.0, Swagger UI (`swagger-ui-express`)
 * **Cơ sở dữ liệu:** PostgreSQL 15 Alpine
-* **Bảo mật:** Mã hóa mật khẩu Bcrypt, xác thực JWT, Regex kiểm tra sinh viên VNU `@vnu.edu.vn`
+* **Kiểm thử tải:** Python multi-threading load tester tương thích **Kaggle CPU**
 * **Triển khai & Vận hành:** Docker & Docker Compose đa dịch vụ (Database, Backend, Frontend)
 
 ---
 
-## 📁 3. Cấu trúc thư mục
+## 🏛️ 3. Thiết kế Kiến trúc Phân tầng (3-Tier Architecture)
+
+Tuân thủ nghiêm ngặt chuẩn kiến trúc phần mềm phân tầng:
+$$\text{Client (Frontend / API Consumer)} \longrightarrow \text{API Layer (Controllers)} \longrightarrow \text{Business Logic Layer (Services)} \longrightarrow \text{Data Access Layer (Repositories)} \longrightarrow \text{PostgreSQL DB}$$
+
+1. **Tầng API (Controllers):** Nhận HTTP request, kiểm tra cú pháp đầu vào, gọi hàm từ tầng nghiệp vụ và trả về HTTP JSON response kèm mã trạng thái (200, 201, 400, 401, 403, 404, 500).
+2. **Tầng Nghiệp vụ (Services):** Chứa toàn bộ quy tắc nghiệp vụ, tính toán chia tiền (Equal Split), ràng buộc email `@vnu.edu.vn`, xử lý logic ghép phòng. **Tầng nghiệp vụ hoàn toàn độc lập: KHÔNG import framework web (Express, req, res) và KHÔNG import thư viện DB (`pg`)**.
+3. **Tầng Truy cập dữ liệu (Repositories):** Đóng gói toàn bộ thao tác tương tác CSDL, bao gồm câu lệnh SQL CRUD và quản lý giao dịch Transaction (`BEGIN ... COMMIT / ROLLBACK`) khi ghi nhận chi phí và chia tiền.
+
+---
+
+## 📁 4. Cấu trúc thư mục
 
 ```text
 phongtroproject/
-├── backend/                  # Mã nguồn Backend API (Express.js)
+├── backend/                       # Mã nguồn Backend API (Express.js)
 │   ├── src/
-│   │   ├── config/           # Cấu hình Database & JWT
-│   │   ├── controllers/      # Bộ điều khiển Auth, Profile, Room, Expense
-│   │   ├── database/         # Script khởi tạo SQL & Seed dữ liệu
-│   │   ├── middlewares/      # Middleware xác thực JWT & bắt lỗi
-│   │   └── routes/           # Định tuyến REST API
+│   │   ├── config/                # Cấu hình Database Pool & JWT
+│   │   ├── controllers/           # [TẦNG 1] Bộ điều khiển API (HTTP Request/Response)
+│   │   ├── services/              # [TẦNG 2] Nghiệp vụ ứng dụng (Pure Business Logic)
+│   │   ├── repositories/          # [TẦNG 3] Tầng truy cập dữ liệu (SQL DAL / Repository)
+│   │   ├── docs/                  # Đặc tả OpenAPI 3.0 (swagger.json)
+│   │   ├── database/              # Script khởi tạo SQL & Seed dữ liệu mẫu
+│   │   ├── middlewares/           # Middleware xác thực JWT & Global Error Handler
+│   │   ├── routes/                # Định tuyến REST API
+│   │   ├── utils/                 # Utility AppError
+│   │   ├── app.js                 # Cấu hình Express app & Swagger UI
+│   │   └── server.js              # Entrypoint khởi chạy server
 │   ├── Dockerfile
 │   └── package.json
-├── vnu-living-frontend/      # Mã nguồn Frontend (React + Vite + TypeScript)
+├── vnu-living-frontend/           # Mã nguồn Frontend (React + Vite + TypeScript)
 │   ├── src/
-│   │   ├── components/       # Layout, PageHeader, Sidebar
-│   │   ├── pages/            # Login, Register, Onboarding, Profile, Roommates, Room, Expenses, Dashboard
-│   │   └── services/         # API client kết nối trực tiếp Backend
-│   ├── Dockerfile            # Multi-stage build Nginx production
+│   │   ├── components/            # Layout, PageHeader, Sidebar
+│   │   ├── pages/                 # Login, Register, Profile, Roommates, Room, Expenses
+│   │   └── services/              # API client kết nối trực tiếp Backend
+│   ├── Dockerfile                 # Multi-stage build Nginx production
 │   ├── nginx.conf
-│   └── vite.config.ts        # Cấu hình Vite & Proxy API
-├── docs/                     # Database Schema SQL phục vụ Docker mount
+│   └── vite.config.ts
+├── load_tests/                    # [YÊU CẦU PHA 1] Kiểm thử tải trên Kaggle CPU
+│   ├── load_test.py               # Script kiểm thử tải đa luồng đo RPS & Latency
+│   └── README_KAGGLE.md           # Hướng dẫn chi tiết chạy benchmark trên Kaggle
+├── docs/                          # Database Schema SQL phục vụ Docker mount
 │   └── db-schema-phase1.sql
-├── docker-compose.yml        # Docker Compose phối hợp 3 services
-├── API_CONTRACT.md           # Đặc tả chi tiết chuẩn RESTful API
-└── README.md                 # Hướng dẫn dự án
+├── docker-compose.yml             # Docker Compose phối hợp 3 services
+├── API_CONTRACT.md                # Đặc tả chi tiết chuẩn RESTful API
+└── README.md                      # Hướng dẫn dự án
 ```
 
 ---
 
-## 🚀 4. Hướng dẫn khởi chạy hệ thống
+## 🚀 5. Hướng dẫn khởi chạy hệ thống
 
 ### Cách 1: Chạy toàn bộ hệ thống bằng Docker Compose (Khuyên dùng)
 > Yêu cầu: Đã cài đặt và khởi động **Docker Desktop**.
@@ -70,12 +91,14 @@ phongtroproject/
    docker compose exec backend npm run seed
    ```
 
-4. **Truy cập ứng dụng:**
+4. **Truy cập ứng dụng & Tài liệu:**
    * **Giao diện Web Frontend:** `http://localhost` (hoặc `http://localhost:80`)
-   * **Backend API:** `http://localhost:5000/api`
+   * **Tài liệu Swagger UI (OpenAPI):** `http://localhost:5000/api/docs`
+   * **OpenAPI Raw JSON:** `http://localhost:5000/api/docs.json`
+   * **Backend API Root:** `http://localhost:5000/api`
    * **Health Check API:** `http://localhost:5000/api/health`
 
-5. **Dừng toàn bộ hệ thống khi không dùng:**
+5. **Dừng toàn bộ hệ thống:**
    ```bash
    docker compose down
    ```
@@ -83,7 +106,6 @@ phongtroproject/
 ---
 
 ### Cách 2: Chạy chế độ Phát triển (Local Development)
-> Khuyên dùng khi cần sửa code và xem cập nhật tức thì (Hot-Reload).
 
 #### Bước 1: Khởi động Database PostgreSQL bằng Docker
 ```bash
@@ -98,6 +120,7 @@ npm install
 npm run seed    # Nạp dữ liệu mẫu
 npm run dev     # Khởi động server API tại http://localhost:5000
 ```
+* Xem tài liệu Swagger UI tại: `http://localhost:5000/api/docs`
 
 #### Bước 3: Chạy Frontend (Terminal 2)
 ```bash
@@ -109,9 +132,23 @@ npm run dev     # Khởi động giao diện web tại http://localhost:5173
 
 ---
 
-## 🔑 5. Tài khoản kiểm thử (Seed Data)
+## 🧪 6. Kiểm thử tải trên Kaggle CPU
 
-Sau khi chạy lệnh `npm run seed`, hệ thống đã chuẩn bị sẵn các tài khoản mẫu để đăng nhập:
+Nhóm đã xây dựng bộ kịch bản kiểm thử tải độc lập tại thư mục [load_tests](./load_tests/):
+1. Đọc hướng dẫn chi tiết tại [load_tests/README_KAGGLE.md](./load_tests/README_KAGGLE.md).
+2. Chạy nhanh kịch bản kiểm thử:
+   ```bash
+   python load_tests/load_test.py
+   ```
+3. Script sẽ đo lường:
+   * **Throughput:** Số lượng yêu cầu xử lý mỗi giây (RPS).
+   * **Phân vị độ trễ (Percentiles):** Mean, P50, P95, P99 dưới mức tải đồng thời cao.
+
+---
+
+## 🔑 7. Tài khoản kiểm thử (Seed Data)
+
+Sau khi chạy lệnh `npm run seed`, hệ thống đã chuẩn bị sẵn các tài khoản mẫu:
 
 | Email sinh viên | Mật khẩu | Họ và tên | Cơ sở |
 | :--- | :--- | :--- | :--- |
@@ -121,20 +158,31 @@ Sau khi chạy lệnh `npm run seed`, hệ thống đã chuẩn bị sẵn các 
 | `student4@vnu.edu.vn` | `Password123@` | Phạm Văn D | Nội thành |
 | `student5@vnu.edu.vn` | `Password123@` | Hoàng Minh E | Nội thành |
 
-*(Bạn cũng có thể tự tạo tài khoản mới ngay trên trang Đăng ký với bất kỳ email đuôi `@vnu.edu.vn`)*.
-
 ---
 
-## 📡 6. Tài liệu đặc tả API
-Xem đầy đủ tài liệu API Contract tại: 👉 [API_CONTRACT.md](./API_CONTRACT.md)
-* `POST /api/auth/register` - Đăng ký tài khoản
-* `POST /api/auth/login` - Đăng nhập nhận JWT
-* `GET  /api/users/me` - Lấy thông tin & hồ sơ cá nhân
-* `PUT  /api/users/profile` - Cập nhật thói quen & profile sinh viên
-* `GET  /api/roommates` - Tìm bạn cùng phòng (bộ lọc campus, budget, habits)
-* `POST /api/rooms` - Tạo phòng trọ / KTX
-* `GET  /api/rooms/my-room` - Xem phòng hiện tại & thành viên
-* `POST /api/rooms/:roomId/members` - Thêm bạn cùng phòng bằng email
-* `POST /api/rooms/:roomId/expenses` - Thêm hóa đơn chi phí
-* `GET  /api/rooms/:roomId/expenses` - Danh sách chi phí phòng
-* `GET  /api/rooms/:roomId/balances` - Bảng tổng hợp số dư chia tiền
+## 📡 8. Danh mục Endpoints & Chuẩn RESTful (OpenAPI/Swagger)
+
+Toàn bộ API có tài liệu tương tác trực quan tại **`http://localhost:5000/api/docs`**:
+
+* **Xác thực:**
+  * `POST /api/auth/register` - Đăng ký tài khoản sinh viên `@vnu.edu.vn`
+  * `POST /api/auth/login` - Đăng nhập nhận JWT
+* **Người dùng & Hồ sơ:**
+  * `GET  /api/users/me` - Lấy thông tin cá nhân kèm profile
+  * `PUT  /api/users/profile` - Cập nhật thói quen & hồ sơ sinh viên
+* **Tìm bạn cùng phòng:**
+  * `GET  /api/roommates` - Tìm bạn cùng phòng (bộ lọc campus, faculty, cohort)
+  * `POST /api/roommates/requests` - Gửi lời mời ghép phòng
+  * `GET  /api/roommates/requests` - Xem danh sách lời mời (Received / Sent)
+  * `PUT  /api/roommates/requests/:id` - Chấp nhận / từ chối lời mời
+* **Quản lý phòng:**
+  * `POST /api/rooms` - Tạo phòng trọ / KTX mới (vai trò ADMIN)
+  * `GET  /api/rooms/my-room` - Xem phòng hiện tại & thành viên
+  * `PUT  /api/rooms/:roomId` - Chỉnh sửa thông tin phòng
+  * `DELETE /api/rooms/:roomId` - Giải tán / Xóa phòng trọ (Thỏa mãn yêu cầu method DELETE)
+  * `POST /api/rooms/:roomId/members` - Mời bạn cùng phòng bằng email
+  * `POST /api/rooms/:roomId/leave` - Rời phòng
+* **Chi tiêu & Chia tiền (Equal Split):**
+  * `POST /api/rooms/:roomId/expenses` - Thêm hóa đơn chi phí (tự động chia đều)
+  * `GET  /api/rooms/:roomId/expenses` - Danh sách chi phí phòng
+  * `GET  /api/rooms/:roomId/balances` - Bảng cân đối công nợ bù trừ netBalance

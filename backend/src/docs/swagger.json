@@ -1,0 +1,376 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "VNU Living & Expense Hub API",
+    "version": "1.0.0-baseline",
+    "description": "API Backend phục vụ bài tập lớn môn Kiến trúc Phần mềm: Quản lý Phòng trọ & Ghép bạn cùng phòng & Chia chi phí sinh hoạt sinh viên ĐHQGHN."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api",
+      "description": "Môi trường phát triển cục bộ (Local Development)"
+    },
+    {
+      "url": "/api",
+      "description": "Đường dẫn tương đối qua Docker / Nginx reverse proxy"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Nhập JWT Token nhận được sau khi đăng nhập (ví dụ: eyJhbGciOi...)"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "Mô tả lỗi" },
+          "error": { "type": "string", "example": "ERROR_CODE" }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["email", "password", "fullName", "studentId"],
+        "properties": {
+          "email": { "type": "string", "example": "student1@vnu.edu.vn" },
+          "password": { "type": "string", "example": "Password123@" },
+          "fullName": { "type": "string", "example": "Nguyễn Văn A" },
+          "studentId": { "type": "string", "example": "22020001" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "example": "student1@vnu.edu.vn" },
+          "password": { "type": "string", "example": "Password123@" }
+        }
+      },
+      "UpdateProfileRequest": {
+        "type": "object",
+        "properties": {
+          "faculty": { "type": "string", "example": "Công nghệ Thông tin" },
+          "cohort": { "type": "string", "example": "K67" },
+          "campus": { "type": "string", "enum": ["HOA_LAC", "NOI_THANH"], "example": "HOA_LAC" },
+          "locationDetail": { "type": "string", "example": "KTX QGHN Hòa Lạc" },
+          "budget": { "type": "integer", "example": 1500000 },
+          "habits": {
+            "type": "object",
+            "properties": {
+              "sleepSchedule": { "type": "string", "enum": ["EARLY", "NIGHT_OWL"], "example": "NIGHT_OWL" },
+              "cleanliness": { "type": "integer", "minimum": 1, "maximum": 5, "example": 4 },
+              "noiseLevel": { "type": "string", "enum": ["QUIET", "NORMAL"], "example": "QUIET" },
+              "smoking": { "type": "boolean", "example": false },
+              "hasPet": { "type": "boolean", "example": false }
+            }
+          },
+          "bio": { "type": "string", "example": "Thích sống ngăn nắp, yên tĩnh." }
+        }
+      },
+      "CreateRoomRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "example": "Phòng 402 Tòa A2" },
+          "campus": { "type": "string", "enum": ["HOA_LAC", "NOI_THANH"], "example": "HOA_LAC" },
+          "addressOrBlock": { "type": "string", "example": "Khu KTX Hòa Lạc" }
+        }
+      },
+      "AddMemberRequest": {
+        "type": "object",
+        "required": ["studentEmail"],
+        "properties": {
+          "studentEmail": { "type": "string", "example": "student2@vnu.edu.vn" }
+        }
+      },
+      "CreateExpenseRequest": {
+        "type": "object",
+        "required": ["title", "amount"],
+        "properties": {
+          "title": { "type": "string", "example": "Tiền điện tháng 10" },
+          "amount": { "type": "number", "example": 450000 },
+          "category": { "type": "string", "enum": ["RENT", "ELECTRICITY", "WATER", "INTERNET", "LIVING"], "example": "ELECTRICITY" },
+          "payerId": { "type": "integer", "description": "ID người trả tiền (mặc định là người tạo)", "example": 1 }
+        }
+      },
+      "CreateRoommateRequest": {
+        "type": "object",
+        "required": ["receiverId"],
+        "properties": {
+          "receiverId": { "type": "integer", "example": 2 },
+          "message": { "type": "string", "example": "Chào bạn, mình thấy cùng học Hòa Lạc và cùng giờ ngủ, cùng ghép phòng nhé!" }
+        }
+      },
+      "RespondRoommateRequest": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": { "type": "string", "enum": ["ACCEPT", "REJECT"], "example": "ACCEPT" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Xác thực (Auth)"],
+        "summary": "Đăng ký tài khoản sinh viên VNU",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Đăng ký thành công" },
+          "400": { "description": "Dữ liệu không hợp lệ", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Xác thực (Auth)"],
+        "summary": "Đăng nhập và nhận JWT token",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Đăng nhập thành công" },
+          "401": { "description": "Sai thông tin đăng nhập", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": ["Người dùng (Users)"],
+        "summary": "Lấy thông tin cá nhân và hồ sơ sinh viên",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Thông tin cá nhân kèm profile" },
+          "401": { "description": "Chưa xác thực" }
+        }
+      }
+    },
+    "/users/profile": {
+      "put": {
+        "tags": ["Người dùng (Users)"],
+        "summary": "Cập nhật hồ sơ và thói quen sinh hoạt (Profile Vector)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateProfileRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Cập nhật thành công" },
+          "401": { "description": "Chưa xác thực" }
+        }
+      }
+    },
+    "/roommates": {
+      "get": {
+        "tags": ["Tìm bạn cùng phòng (Roommates)"],
+        "summary": "Lấy danh sách ứng viên tìm bạn cùng phòng (kèm bộ lọc)",
+        "parameters": [
+          { "name": "campus", "in": "query", "schema": { "type": "string", "enum": ["HOA_LAC", "NOI_THANH"] }, "description": "Lọc theo cơ sở" },
+          { "name": "faculty", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo khoa/trường" },
+          { "name": "cohort", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo khóa (K67, K68...)" }
+        ],
+        "responses": {
+          "200": { "description": "Danh sách bạn cùng phòng phù hợp" }
+        }
+      }
+    },
+    "/roommates/requests": {
+      "post": {
+        "tags": ["Tìm bạn cùng phòng (Roommates)"],
+        "summary": "Gửi lời mời ghép phòng",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRoommateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Gửi lời mời thành công" },
+          "400": { "description": "Lỗi dữ liệu hoặc đã gửi trước đó" }
+        }
+      },
+      "get": {
+        "tags": ["Tìm bạn cùng phòng (Roommates)"],
+        "summary": "Lấy danh sách lời mời đã gửi và đã nhận",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Danh sách lời mời received và sent" }
+        }
+      }
+    },
+    "/roommates/requests/{id}": {
+      "put": {
+        "tags": ["Tìm bạn cùng phòng (Roommates)"],
+        "summary": "Phản hồi lời mời ghép phòng (ACCEPT / REJECT)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "ID lời mời" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RespondRoommateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Phản hồi thành công" }
+        }
+      }
+    },
+    "/rooms": {
+      "post": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Tạo phòng trọ / KTX mới (Người tạo làm ADMIN)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRoomRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Tạo phòng thành công" },
+          "400": { "description": "Đã có phòng hoặc thiếu thông tin" }
+        }
+      }
+    },
+    "/rooms/my-room": {
+      "get": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Lấy thông tin phòng hiện tại và danh sách thành viên",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Thông tin phòng và thành viên" },
+          "404": { "description": "Chưa tham gia phòng nào" }
+        }
+      }
+    },
+    "/rooms/{roomId}": {
+      "put": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Chỉnh sửa thông số phòng trọ (Chỉ ADMIN)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRoomRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Cập nhật thành công" }
+        }
+      },
+      "delete": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Giải tán/Xóa phòng trọ (Chỉ ADMIN) - Thỏa yêu cầu method DELETE",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Đã xóa phòng thành công" },
+          "403": { "description": "Không có quyền ADMIN" }
+        }
+      }
+    },
+    "/rooms/{roomId}/members": {
+      "post": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Gửi lời mời thêm thành viên vào phòng qua email sinh viên (Chỉ ADMIN)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AddMemberRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Gửi lời mời thành công" }
+        }
+      }
+    },
+    "/rooms/{roomId}/leave": {
+      "post": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Rời khỏi phòng trọ hiện tại",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Rời phòng thành công" }
+        }
+      }
+    },
+    "/rooms/{roomId}/invitations": {
+      "get": {
+        "tags": ["Quản lý phòng (Rooms)"],
+        "summary": "Lấy danh sách lời mời đang chờ phản hồi của phòng này",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Danh sách lời mời pending" }
+        }
+      }
+    },
+    "/rooms/{roomId}/expenses": {
+      "post": {
+        "tags": ["Chi tiêu & Chia tiền (Expenses)"],
+        "summary": "Thêm hóa đơn chi tiêu phòng (Tự động chia đều cho thành viên)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateExpenseRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Tạo chi tiêu và chia tiền thành công" }
+        }
+      },
+      "get": {
+        "tags": ["Chi tiêu & Chia tiền (Expenses)"],
+        "summary": "Lấy danh sách toàn bộ các khoản chi tiêu của phòng",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Danh sách hóa đơn" }
+        }
+      }
+    },
+    "/rooms/{roomId}/balances": {
+      "get": {
+        "tags": ["Chi tiêu & Chia tiền (Expenses)"],
+        "summary": "Bảng cân đối công nợ (Room Balances - Tính toán số dư bù trừ giữa các thành viên)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "roomId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Bảng tổng hợp thu chi và số dư bù trừ netBalance" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Hệ thống (System)"],
+        "summary": "Kiểm tra trạng thái hoạt động (Healthcheck)",
+        "responses": {
+          "200": { "description": "Hệ thống hoạt động bình thường" }
+        }
+      }
+    }
+  }
+}
