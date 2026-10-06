@@ -126,6 +126,48 @@ async function seedData() {
       }
     }
 
+    // Seed initial sample room and expense if not existing
+    const roomCheck = await query('SELECT id FROM rooms WHERE id = 1');
+    if (roomCheck.rows.length === 0) {
+      await query(
+        `INSERT INTO rooms (id, name, campus, address_or_block, created_by)
+         OVERRIDING SYSTEM VALUE
+         VALUES (1, 'Phòng 301 KTX Hòa Lạc', 'HOA_LAC', 'Tòa Dom B KTX Hòa Lạc', 1)
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           address_or_block = EXCLUDED.address_or_block`
+      );
+      await query(
+        `INSERT INTO room_members (room_id, user_id, role)
+         VALUES (1, 1, 'ADMIN'), (1, 2, 'MEMBER')
+         ON CONFLICT DO NOTHING`
+      );
+      await query(
+        `INSERT INTO expenses (id, room_id, title, amount, category, payer_id)
+         OVERRIDING SYSTEM VALUE
+         VALUES (1, 1, 'Tiền điện sinh hoạt tháng 10/2026', 600000, 'ELECTRICITY', 1)
+         ON CONFLICT (id) DO UPDATE SET
+           title = EXCLUDED.title`
+      );
+      await query(
+        `INSERT INTO expense_splits (expense_id, user_id, split_amount)
+         VALUES (1, 1, 300000), (1, 2, 300000)
+         ON CONFLICT DO NOTHING`
+      );
+    } else {
+      await query(`
+        UPDATE rooms
+        SET name = 'Phòng 301 KTX Hòa Lạc',
+            address_or_block = 'Tòa Dom B KTX Hòa Lạc'
+        WHERE id = 1
+      `);
+      await query(`
+        UPDATE expenses
+        SET title = 'Tiền điện sinh hoạt tháng 10/2026'
+        WHERE id = 1
+      `);
+    }
+
     console.log('✅ Seed dữ liệu mẫu thành công!');
     console.log('Tài khoản mẫu: student1@vnu.edu.vn / Password123@');
     console.log('Tài khoản mẫu: student2@vnu.edu.vn / Password123@');

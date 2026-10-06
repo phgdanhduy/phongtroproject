@@ -1,0 +1,133 @@
+================================================================================
+                    DANH SÁCH TÀI KHOẢN KIỂM THỬ HỆ THỐNG
+                         VNU LIVING & EXPENSE HUB
+================================================================================
+
+1. THÔNG TIN TRUY CẬP HỆ THỐNG
+--------------------------------------------------------------------------------
+- Giao diện Web (Frontend) : http://localhost:5173
+- Máy chủ API (Backend)    : http://localhost:5000/api
+- Kiểm tra trạng thái API  : http://localhost:5000/api/health
+- Quy định email           : Bắt buộc định dạng đuôi @vnu.edu.vn
+- MẬT KHẨU CHUNG           : Password123@
+  (Tất cả các tài khoản bên dưới đều dùng chung mật khẩu này)
+
+
+2. DANH SÁCH TÀI KHOẢN THEO KỊCH BẢN KIỂM THỬ
+--------------------------------------------------------------------------------
+
+[NHÓM 1: ĐÃ CÓ PHÒNG TRỌ & QUẢN LÝ CHI PHÍ TẠI KTX HÒA LẠC]
+* Phòng: "Phòng 301 KTX Hòa Lạc" (Tòa Dom B KTX Hòa Lạc)
+
+1. Tài khoản Trưởng phòng (Admin):
+   - Email      : student1@vnu.edu.vn
+   - Mật khẩu   : Password123@
+   - Họ và tên  : Nguyễn Văn A
+   - MSSV       : 22020001
+   - Khoa       : Công nghệ Thông tin (K67)
+   - Cơ sở      : Hòa Lạc
+   - Vai trò    : Trưởng phòng (ADMIN)
+   - Tính năng  : Thêm thành viên vào phòng, thêm khoản chi tiêu (điện/nước/nhà),
+                  xem bảng tổng hợp số dư chia đều (Equal Split Matrix).
+
+2. Tài khoản Thành viên trong phòng:
+   - Email      : student2@vnu.edu.vn
+   - Mật khẩu   : Password123@
+   - Họ và tên  : Trần Văn B
+   - MSSV       : 22020002
+   - Khoa       : Công nghệ Thông tin (K67)
+   - Cơ sở      : Hòa Lạc
+   - Vai trò    : Thành viên (MEMBER)
+   - Tính năng  : Xem thông tin phòng, danh sách chi tiêu và số dư cần thanh toán.
+
+
+[NHÓM 2: TÌM BẠN CÙNG PHÒNG TẠI CƠ SỞ KTX HÒA LẠC]
+(Các tài khoản chưa tham gia phòng, phục vụ test bộ lọc và tìm ghép bạn)
+
+3. Sinh viên tìm bạn ở ghép KTX Hòa Lạc (Dậy sớm):
+   - Email      : student3@vnu.edu.vn
+   - Mật khẩu   : Password123@
+   - Họ và tên  : Lê Thị C
+   - MSSV       : 22020003
+   - Khoa       : Kinh tế & Quản lý (K68)
+   - Cơ sở      : Hòa Lạc (Tòa A1 KTX Hòa Lạc)
+   - Ngân sách  : 1.200.000 đ/tháng
+   - Thói quen  : Dậy sớm (EARLY), Sạch sẽ 5/5, Tiếng ồn bình thường
+
+4. Sinh viên tìm bạn ở ghép KTX Hòa Lạc (Cú đêm):
+   - Email      : lehoanglong@vnu.edu.vn
+   - Mật khẩu   : Password123@
+   - Họ và tên  : Lê Hoàng Long
+   - MSSV       : 22020888
+   - Khoa       : Khoa Quốc tế (K67)
+   - Cơ sở      : Hòa Lạc (Tòa B1 KTX Hòa Lạc)
+   - Ngân sách  : 1.500.000 đ/tháng
+   - Thói quen  : Cú đêm (NIGHT_OWL), Sạch sẽ 4/5, Yên tĩnh
+
+
+[NHÓM 3: TÌM BẠN CÙNG PHÒNG TẠI KHU VỰC NỘI THÀNH HÀ NỘI]
+(Thuê chung cư mini, phòng trọ quanh khu vực Cầu Giấy, Nam Từ Liêm)
+
+5. Sinh viên tìm phòng khu vực Cầu Giấy (Xuân Thủy):
+   - Email      : student4@vnu.edu.vn
+   - Mật khẩu   : Password123@
+   - Họ và tên  : Phạm Văn D
+   - MSSV       : 22020004
+   - Khoa       : Trường Ngoại ngữ (K67)
+   - Cơ sở      : Nội thành (Cầu Giấy, bán kính < 2km)
+   - Ngân sách  : 2.500.000 đ/tháng
+   - Thói quen  : Cú đêm (NIGHT_OWL), Sạch sẽ 4/5
+
+6. Sinh viên tìm phòng khu vực Nam Từ Liêm (Mễ Trì):
+   - Email      : student5@vnu.edu.vn
+   - Mật khẩu   : Password123@
+   - Họ và tên  : Hoàng Minh E
+   - MSSV       : 22020005
+   - Khoa       : Khoa Luật (K66)
+   - Cơ sở      : Nội thành (Mễ Trì / Nam Từ Liêm)
+   - Ngân sách  : 2.000.000 đ/tháng
+   - Thói quen  : Dậy sớm (EARLY), Sạch sẽ 4/5, Yên tĩnh ôn thi tốt nghiệp
+
+
+3. HƯỚNG DẪN KỊCH BẢN KIỂM THỬ NHANH
+--------------------------------------------------------------------------------
+* Kịch bản 1 (Quản lý chi phí & Chia tiền đều):
+  1. Đăng nhập tài khoản student1@vnu.edu.vn
+  2. Vào mục "Phòng của tôi" -> Xem thông tin phòng & thành viên.
+  3. Vào mục "Chi phí" -> Thêm 1 hóa đơn (ví dụ: Tiền nước 120.000đ).
+  4. Quan sát hệ thống tự động chia đôi (60.000đ/người) và cập nhật số dư ròng
+     (Net Balance) trong bảng tổng hợp.
+  5. Đăng xuất, đăng nhập student2@vnu.edu.vn -> Vào mục "Chi phí" để đối soát.
+
+* Kịch bản 2 (Tìm bạn cùng phòng):
+  1. Đăng nhập student3@vnu.edu.vn
+  2. Vào mục "Tìm bạn cùng phòng".
+  3. Dùng bộ lọc chuyển đổi giữa "Tất cả cơ sở", "KTX Hòa Lạc" và "Nội thành".
+  4. Thử gửi lời mời ghép phòng.
+
+* Kịch bản 3 (Đăng ký tài khoản mới):
+  1. Chọn "Đăng ký" tại trang Đăng nhập.
+  2. Nhập một email đuôi @vnu.edu.vn bất kỳ (ví dụ: yourname@vnu.edu.vn).
+  3. Nhập mật khẩu tối thiểu 6 ký tự.
+  4. Hoàn thành luồng Onboarding thiết lập hồ sơ thói quen sinh hoạt.
+
+* Kịch bản 4 (Gửi lời mời thành viên vào phòng hiện có):
+  1. Đăng nhập Trưởng phòng: student1@vnu.edu.vn (Mật khẩu: Password123@).
+  2. Vào mục "Phòng của tôi" -> Bấm "+ Gửi lời mời vào phòng".
+  3. Nhập email: student5@vnu.edu.vn -> Bấm "Gửi lời mời tham gia".
+  4. Hệ thống KHÔNG tự ý ép bạn ấy vào phòng ngay, mà tạo lời mời hiển thị ở danh sách "Lời mời vào phòng đang chờ đối phương phản hồi".
+  5. Đăng xuất, đăng nhập student5@vnu.edu.vn -> Vào mục "Tìm bạn cùng phòng" -> Tab "📬 Lời mời đã nhận".
+  6. Thấy ngay lời mời từ Trưởng phòng student1@vnu.edu.vn kèm nút "Chấp nhận" và "Từ chối".
+
+* Kịch bản 5 (Chấp nhận lời mời ghép phòng -> Tự động tạo phòng mới & sửa thông số):
+  1. Đăng nhập student4@vnu.edu.vn hoặc tài khoản chưa có phòng.
+  2. Vào "Tìm bạn cùng phòng" -> Bấm "Gửi lời mời ghép phòng" tới một bạn khác (hoặc xem tab "📬 Lời mời đã nhận").
+  3. Khi bấm "Chấp nhận", hệ thống sẽ TỰ ĐỘNG TẠO PHÒNG MỚI với tên mặc định (ví dụ: "Phòng ghép Bạn A & Bạn B") và địa chỉ tạm thời.
+  4. Người gửi được chỉ định làm ADMIN (Trưởng phòng), người nhận là MEMBER.
+  5. Vào mục "Phòng của tôi" -> Bấm "✏️ Chỉnh sửa thông số phòng" để cập nhật Tên phòng, Địa chỉ, Khu vực (Hòa Lạc / Nội thành) bất kỳ lúc nào!
+
+* Kịch bản 6 (Rời phòng và Xóa / Giải tán phòng):
+  1. Đối với thành viên thường (MEMBER): Có nút "🚪 Rời khỏi phòng" để tự nguyện rút khỏi phòng trọ.
+  2. Đối với trưởng phòng (ADMIN): Có nút "🗑️ Giải tán / Xóa phòng" (yêu cầu xác nhận an toàn trước khi xóa khỏi hệ thống).
+================================================================================
+

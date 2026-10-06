@@ -62,9 +62,21 @@ CREATE TABLE IF NOT EXISTS expense_splits (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS roommate_requests (
+    id SERIAL PRIMARY KEY,
+    sender_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    receiver_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    room_id INTEGER REFERENCES rooms(id) ON DELETE CASCADE,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING', -- 'PENDING', 'ACCEPTED', 'REJECTED'
+    message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_campus ON profiles(campus);
 CREATE INDEX IF NOT EXISTS idx_room_members_room ON room_members(room_id);
 CREATE INDEX IF NOT EXISTS idx_room_members_user ON room_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_expenses_room ON expenses(room_id);
+CREATE INDEX IF NOT EXISTS idx_roommate_requests_receiver ON roommate_requests(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_roommate_requests_sender ON roommate_requests(sender_id);

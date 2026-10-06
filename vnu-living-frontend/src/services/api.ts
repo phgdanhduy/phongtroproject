@@ -75,6 +75,40 @@ export const roommateApi = {
     });
     return res.json();
   },
+
+  async sendRequest(receiverId: number, message?: string): Promise<ApiResponse<any>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/roommates/requests`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ receiverId, message }),
+    });
+    return res.json();
+  },
+
+  async getRequests(): Promise<ApiResponse<{ received: any[]; sent: any[] }>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/roommates/requests`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.json();
+  },
+
+  async respondRequest(requestId: number, action: "ACCEPT" | "REJECT"): Promise<ApiResponse<any>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/roommates/requests/${requestId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action }),
+    });
+    return res.json();
+  },
 };
 
 export const userApi = {
@@ -131,6 +165,45 @@ export const roomApi = {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ studentEmail: email }),
+    });
+    return res.json();
+  },
+
+  async updateRoom(roomId: number, data: { name?: string; campus?: string; addressOrBlock?: string }): Promise<ApiResponse<any>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/rooms/${roomId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  async getRoomInvitations(roomId: number): Promise<ApiResponse<any[]>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/rooms/${roomId}/invitations`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.json();
+  },
+
+  async deleteRoom(roomId: number): Promise<ApiResponse<any>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/rooms/${roomId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.json();
+  },
+
+  async leaveRoom(roomId: number): Promise<ApiResponse<any>> {
+    const token = authApi.getToken();
+    const res = await fetch(`${BASE_URL}/rooms/${roomId}/leave`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
     });
     return res.json();
   },
