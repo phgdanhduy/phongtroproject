@@ -31,6 +31,9 @@ $$\text{Client (Frontend / API Consumer)} \longrightarrow \text{API Layer (Contr
 3. **Tầng Truy cập dữ liệu (Repositories):** Đóng gói toàn bộ thao tác tương tác CSDL, bao gồm câu lệnh SQL CRUD và quản lý giao dịch Transaction (`BEGIN ... COMMIT / ROLLBACK`) khi ghi nhận chi phí và chia tiền.
 
 ---
+<img width="1536" height="1024" alt="1791282265399_4420873897252393186_g4670334134159927144_54cff89fcc0a26857bf4f14d197e87ce" src="https://github.com/user-attachments/assets/97af8dfe-40f1-4662-9d9c-0ad6af9546fd" />
+
+
 
 ## 📁 4. Cấu trúc thư mục
 
