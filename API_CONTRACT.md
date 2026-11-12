@@ -428,3 +428,103 @@ Tài liệu đặc tả chuẩn giao tiếp RESTful API giữa Front-End và Bac
 | `403` | `FORBIDDEN_NOT_ADMIN` | Quyền hạn yêu cầu vai trò Trưởng phòng (ADMIN) |
 | `404` | `ROOM_NOT_FOUND` | Không tìm thấy phòng trọ |
 | `404` | `USER_NOT_FOUND` | Không tìm thấy thông tin người dùng |
+
+
+---
+
+## 8. Đặc tả mở rộng Giai đoạn 2: Cải tiến Kiến trúc & Các tính năng mới
+
+Phần này bổ sung các trường dữ liệu và endpoint mới phục vụ cho **Giai đoạn 2 (Cải tiến 1)** theo các mẫu thiết kế: **Strategy Pattern, Cache-Aside (Redis), Min-Cash-Flow, VietQR, Weighted Cosine Similarity và Mutual Privacy Gate**.
+
+### 8.1. Cập nhật API Tìm bạn cùng phòng (`GET /roommates`)
+* **Bổ sung:**
+  * `compatibilityScore`: Điểm tương thích % tính từ thuật toán Weighted Cosine Similarity (0 - 100).
+  * `matchStatus`: Trạng thái kết nối (`NONE`, `PENDING`, `ACCEPTED`, `REJECTED`).
+  * `contact`: Bảo vệ thông tin cá nhân (chỉ hiển thị khi `isUnlocked = true`).
+* **Ví dụ Data mở rộng:**
+  ```json
+  {
+    "userId": 2,
+    "fullName": "Trần Văn B",
+    "faculty": "Công nghệ Thông tin",
+    "cohort": "K67",
+    "campus": "HOA_LAC",
+    "locationDetail": "Tòa A2 KTX Hòa Lạc",
+    "budget": 1500000,
+    "habits": {
+      "sleepSchedule": "NIGHT_OWL",
+      "cleanliness": 4,
+      "noiseLevel": "QUIET"
+    },
+    "compatibilityScore": 88,
+    "matchStatus": "PENDING",
+    "contact": {
+      "phone": "0987*** (Chấp nhận ghép để xem)",
+      "zalo": null,
+      "isUnlocked": false
+    }
+  }
+  ```
+
+### 8.2. Yêu cầu kết nối ghép phòng (Mutual Privacy Gate)
+* **Gửi lời mời ghép phòng:** `POST /matching/requests`
+  * Body: `{ "targetUserId": 2, "message": "Chào bạn, mình cũng học K67 CNTT muốn ở ghép..." }`
+  * Response: `{ "success": true, "message": "Đã gửi lời mời ghép phòng", "data": { "id": 5, "status": "PENDING" } }`
+* **Phản hồi lời mời:** `PUT /matching/requests/:requestId`
+  * Body: `{ "action": "ACCEPT" }` hoặc `{ "action": "REJECT" }`
+  * Response: Khi cả 2 cùng ACCEPT, hệ thống trả về thông tin liên lạc mở khóa (SĐT/Zalo).
+
+### 8.3. Tạo hóa đơn chi tiêu đa chiến lược (`POST /rooms/:roomId/expenses`)
+* **Áp dụng Strategy Pattern:** Hỗ trợ 3 chiến lược chia tiền:
+  1. `EQUAL`: Chia đều cho tất cả thành viên trong phòng.
+  2. `CUSTOM`: Chỉ chia cho danh sách thành viên thực tế tham gia (`participantIds`).
+  3. `METERED`: Tính tiền điện/nước theo chỉ số công tơ (`meterDetails`).
+* **Khóa lạc quan (Optimistic Locking):** Trường `version` trong hóa đơn.
+* **Body mẫu (Chia tiền điện nước):**
+  ```json
+  {
+    "title": "Tiền điện tháng 11",
+    "amount": 450000,
+    "category": "ELECTRICITY",
+    "payerId": 1,
+    "splitStrategy": "METERED",
+    "meterDetails": {
+      "oldReading": 120,
+      "newReading": 220,
+      "unitPrice": 4500
+    }
+  }
+  ```
+* **Body mẫu (Chia theo người tham gia):**
+  ```json
+  {
+    "title": "Tiền ăn lẩu liên hoan phòng",
+    "amount": 600000,
+    "category": "LIVING",
+    "payerId": 1,
+    "splitStrategy": "CUSTOM",
+    "participantIds": [1, 2]
+  }
+  ```
+
+### 8.4. Bảng công nợ rút gọn (Min-Cash-Flow) & VietQR (`GET /rooms/:roomId/balances`)
+* **Bổ sung:** Danh sách giao dịch rút gọn tối thiểu `settlementTransactions` kèm mã VietQR tự động sinh:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "totalRoomExpense": 450000,
+      "memberBalances": [ ... ],
+      "settlementTransactions": [
+        {
+          "fromUserId": 3,
+          "fromName": "Lê Thị C",
+          "toUserId": 1,
+          "toName": "Nguyễn Văn A",
+          "amount": 150000,
+          "vietQrUrl": "https://img.vietqr.io/image/970422-0123456789-compact2.png?amount=150000&addInfo=PHONG402_LETHIC_TRA_TIEN"
+        }
+      ]
+    }
+  }
+  ```
