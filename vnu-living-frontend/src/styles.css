@@ -417,3 +417,36 @@ body {
     padding: 20px;
   }
 }
+/* Phase 2: isolated additions, keep Phase 1 styles intact. */
+.p2-banner { background:#fff7db;color:#775400;border:1px solid #ead99e;padding:12px;border-radius:9px;margin:0 0 16px;font-size:13px;font-weight:600; }
+.p2-tabs,.p2-actions,.p2-strategies {display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+.p2-tabs {border-bottom:1px solid var(--border);padding-bottom:14px;margin-bottom:18px;}
+.p2-filters {display:flex;gap:14px;flex-wrap:wrap;align-items:end;margin-bottom:18px;}
+.p2-filters label {flex:1 1 150px;min-width:0;}
+.p2-cards {grid-template-columns:repeat(auto-fit,minmax(min(255px,100%),1fr));}
+.p2-candidate {display:flex;flex-direction:column;gap:8px;}
+.p2-candidate .habit-tags {margin:4px 0;}
+.p2-candidate .btn {margin-top:auto;}
+.p2-contact {background:#f4f6f4;border:1px solid var(--border);border-radius:8px;padding:10px;font-size:12px;margin:6px 0;overflow-wrap:anywhere;}
+.p2-contact p {margin:4px 0;}
+.p2-meter {height:6px;background:#e8f0eb;border-radius:10px;overflow:hidden;}
+.p2-meter span {display:block;height:100%;background:var(--primary);}
+.p2-stack {display:grid;gap:14px;align-content:start;}
+.p2-request,.p2-wallet-row {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.p2-wallet-row {border-top:1px solid var(--border);padding:12px 0;}
+.p2-wallet {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px;}
+.p2-debt {background:#fff1f0;color:#a51e24;}.p2-credit {background:#ecf8ef;color:#17663b;}
+.p2-wallet h2 {margin:10px 0 16px;}.p2-wallet p {margin:5px 0;}
+.p2-expense-layout {grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);align-items:start;}
+.p2-expense-form {display:grid;gap:15px;}.p2-two {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.p2-expense-form fieldset {border:1px solid var(--border);border-radius:8px;padding:10px;min-width:0;display:grid;gap:8px;}
+.p2-expense-form legend {font-size:12px;font-weight:700;padding:0 5px;}
+.p2-expense-form input[type=checkbox],.p2-expense-form input[type=radio] {width:auto;accent-color:var(--primary);}
+.p2-danger {color:#b91c1c;}.p2-positive {color:#087a43;}
+.p2-overlay {position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.48);display:grid;place-items:center;padding:20px;}
+.p2-dialog {display:grid;gap:15px;width:min(460px,100%);max-height:90vh;overflow:auto;}
+.p2-dialog textarea {width:100%;min-height:110px;padding:10px;border:1px solid var(--border);border-radius:8px;font:inherit;}
+.p2-qr {display:block;width:min(260px,100%);margin:auto;object-fit:contain;}
+.btn:disabled {opacity:.6;cursor:not-allowed;}
+@media(max-width:900px){.p2-expense-layout,.p2-wallet{grid-template-columns:1fr;}}
+@media(max-width:520px){.p2-two{grid-template-columns:1fr;}}

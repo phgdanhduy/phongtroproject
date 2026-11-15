@@ -1,4 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { isMock } from "../phase2/mode";
 import { authApi } from "../services/api";
 
 export default function Layout() {
@@ -41,6 +42,7 @@ export default function Layout() {
       </aside>
 
       <main className="main-content">
+        {isMock && <div className="p2-banner">Chế độ demo Phase 2: Tìm bạn cùng phòng và Chi phí dùng dữ liệu mock; các trang khác vẫn dùng API Phase 1.</div>}
         <Outlet />
       </main>
     </div>

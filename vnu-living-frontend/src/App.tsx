@@ -8,6 +8,9 @@ import ProfilePage from "./pages/ProfilePage";
 import RegisterPage from "./pages/RegisterPage";
 import RoommatesPage from "./pages/RoommatesPage";
 import RoomPage from "./pages/RoomPage";
+import MatchingPage from "./phase2/MatchingPage";
+import Phase2ExpensesPage from "./phase2/ExpensesPage";
+import { mode } from "./phase2/mode";
 import { authApi } from "./services/api";
 
 function ProtectedRoute() {
@@ -52,9 +55,9 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/roommates" element={<RoommatesPage />} />
+        <Route path="/roommates" element={mode === "baseline" ? <RoommatesPage /> : <MatchingPage />} />
         <Route path="/room" element={<RoomPage />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/expenses" element={mode === "baseline" ? <ExpensesPage /> : <Phase2ExpensesPage />} />
       </Route>
     </Routes>
   );
