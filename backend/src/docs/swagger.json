@@ -1115,6 +1115,43 @@
             "description": "Xung đột khóa lạc quan (OPTIMISTIC_LOCK_CONFLICT)"
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Chi tiêu & Chia tiền (Expenses)"
+        ],
+        "summary": "Xóa hóa đơn chi tiêu và tự động xóa Redis cache công nợ",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "expenseId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xóa khoản chi tiêu thành công"
+          },
+          "404": {
+            "description": "Không tìm thấy khoản chi tiêu"
+          }
+        }
       }
     }
   }

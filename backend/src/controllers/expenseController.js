@@ -66,9 +66,26 @@ async function getBalances(req, res, next) {
   }
 }
 
+async function deleteExpense(req, res, next) {
+  try {
+    const roomId = parseInt(req.params.roomId, 10);
+    const expenseId = parseInt(req.params.expenseId, 10);
+    const data = await expenseService.deleteExpense(req.user.id, roomId, expenseId);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Xóa khoản chi tiêu thành công',
+      data
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createExpense,
   updateExpense,
+  deleteExpense,
   getExpenses,
   getBalances
 };

@@ -228,9 +228,34 @@ async function getBalances(currentUserId, roomId) {
   };
 }
 
+/**
+ * 5. Xóa khoản chi tiêu & Invalidate Redis Cache
+ */
+async function deleteExpense(currentUserId, roomId, expenseId) {
+  if (!roomId || !expenseId) {
+    throw new AppError('Thiếu thông tin phòng hoặc hóa đơn', 400, 'INVALID_INPUT');
+  }
+
+  const memberCheck = await roomRepository.findMember(roomId, currentUserId);
+  if (!memberCheck) {
+    throw new AppError('Bạn không có quyền thao tác trên phòng này', 403, 'FORBIDDEN');
+  }
+
+  const deleted = await expenseRepository.deleteById(expenseId, roomId);
+  if (!deleted) {
+    throw new AppError('Không tìm thấy khoản chi tiêu', 404, 'NOT_FOUND');
+  }
+
+  // Xóa cache công nợ phòng sau khi xóa hóa đơn
+  await deleteCache(getBalanceCacheKey(roomId));
+
+  return { deletedId: deleted.id };
+}
+
 module.exports = {
   createExpense,
   updateExpense,
+  deleteExpense,
   getExpenses,
   getBalances
 };

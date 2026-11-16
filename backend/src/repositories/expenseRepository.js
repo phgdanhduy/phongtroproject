@@ -147,6 +147,14 @@ async function getSplitsByExpenseId(expenseId) {
   return result.rows;
 }
 
+async function deleteById(expenseId, roomId) {
+  const result = await query(
+    'DELETE FROM expenses WHERE id = $1 AND room_id = $2 RETURNING id',
+    [expenseId, roomId]
+  );
+  return result.rows[0] || null;
+}
+
 module.exports = {
   createExpenseWithSplits,
   updateExpenseWithSplits,
@@ -154,5 +162,6 @@ module.exports = {
   findByRoomId,
   getTotalsPaidByRoomId,
   getTotalsOwedByRoomId,
-  getSplitsByExpenseId
+  getSplitsByExpenseId,
+  deleteById
 };

@@ -199,6 +199,11 @@ async function seedData() {
       `);
     }
 
+    // Đồng bộ lại PostgreSQL SERIAL sequence sau khi insert id thủ công
+    await query(`SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 1));`);
+    await query(`SELECT setval(pg_get_serial_sequence('rooms', 'id'), COALESCE((SELECT MAX(id) FROM rooms), 1));`);
+    await query(`SELECT setval(pg_get_serial_sequence('expenses', 'id'), COALESCE((SELECT MAX(id) FROM expenses), 1));`);
+
     console.log('✅ Seed dữ liệu mẫu thành công!');
     console.log('Tài khoản mẫu: student1@vnu.edu.vn / Password123@');
     console.log('Tài khoản mẫu: student2@vnu.edu.vn / Password123@');
