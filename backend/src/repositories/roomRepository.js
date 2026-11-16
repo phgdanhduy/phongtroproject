@@ -37,7 +37,9 @@ async function findMemberAnyRoom(userId) {
 
 async function findMembersByRoomId(roomId) {
   const result = await query(
-    `SELECT u.id AS "userId", u.full_name AS "fullName", u.student_id AS "studentId", u.email, rm.role, rm.joined_at AS "joinedAt"
+    `SELECT u.id AS "userId", u.full_name AS "fullName", u.student_id AS "studentId", u.email,
+            u.bank_bin AS "bankBin", u.bank_account AS "bankAccount", u.bank_account_name AS "bankAccountName",
+            rm.role, rm.joined_at AS "joinedAt"
      FROM room_members rm
      JOIN users u ON u.id = rm.user_id
      WHERE rm.room_id = $1
