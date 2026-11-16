@@ -2,8 +2,17 @@ const roommateService = require('../services/roommateService');
 
 async function getRoommates(req, res, next) {
   try {
-    const { campus, faculty, cohort } = req.query;
-    const data = await roommateService.getRoommates({ campus, faculty, cohort });
+    const { campus, faculty, cohort, dormBuilding, district, radiusKm } = req.query;
+    const currentUserId = req.user ? req.user.id : null;
+    const data = await roommateService.getRoommates({
+      campus,
+      faculty,
+      cohort,
+      dormBuilding,
+      district,
+      radiusKm,
+      currentUserId
+    });
 
     return res.status(200).json({
       success: true,
@@ -16,7 +25,11 @@ async function getRoommates(req, res, next) {
 
 async function createRequest(req, res, next) {
   try {
-    const result = await roommateService.createRequest(req.user.id, req.body);
+    const targetUserId = req.body.targetUserId || req.body.receiverId;
+    const result = await roommateService.createRequest(req.user.id, {
+      receiverId: targetUserId,
+      message: req.body.message
+    });
 
     return res.status(201).json({
       success: true,

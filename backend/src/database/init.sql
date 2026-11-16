@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS profiles (
     cohort VARCHAR(50),
     campus VARCHAR(50) NOT NULL DEFAULT 'HOA_LAC', -- 'HOA_LAC' or 'NOI_THANH'
     location_detail VARCHAR(255),
+    dorm_building VARCHAR(100),
+    district VARCHAR(100),
+    phone VARCHAR(50),
+    zalo VARCHAR(100),
     budget INTEGER DEFAULT 1500000,
     sleep_schedule VARCHAR(50) DEFAULT 'NIGHT_OWL', -- 'EARLY' or 'NIGHT_OWL'
     cleanliness INTEGER DEFAULT 4, -- 1 to 5
@@ -25,6 +29,12 @@ CREATE TABLE IF NOT EXISTS profiles (
     bio TEXT,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Migration support for Phase 2 columns if profiles table already exists
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS phone VARCHAR(50);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS zalo VARCHAR(100);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dorm_building VARCHAR(100);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS district VARCHAR(100);
 
 CREATE TABLE IF NOT EXISTS rooms (
     id SERIAL PRIMARY KEY,

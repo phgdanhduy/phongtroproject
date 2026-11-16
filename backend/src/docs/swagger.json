@@ -173,14 +173,56 @@
     "/roommates": {
       "get": {
         "tags": ["Tìm bạn cùng phòng (Roommates)"],
-        "summary": "Lấy danh sách ứng viên tìm bạn cùng phòng (kèm bộ lọc)",
+        "summary": "Lấy danh sách ứng viên tìm bạn cùng phòng (Weighted Cosine Similarity & Privacy Gate)",
         "parameters": [
           { "name": "campus", "in": "query", "schema": { "type": "string", "enum": ["HOA_LAC", "NOI_THANH"] }, "description": "Lọc theo cơ sở" },
           { "name": "faculty", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo khoa/trường" },
-          { "name": "cohort", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo khóa (K67, K68...)" }
+          { "name": "cohort", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo khóa (K67, K68...)" },
+          { "name": "dormBuilding", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo Tòa KTX (Hòa Lạc)" },
+          { "name": "district", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo Quận (Nội thành)" },
+          { "name": "radiusKm", "in": "query", "schema": { "type": "string" }, "description": "Lọc theo bán kính (km)" }
         ],
         "responses": {
-          "200": { "description": "Danh sách bạn cùng phòng phù hợp" }
+          "200": { "description": "Danh sách bạn cùng phòng phù hợp sắp xếp theo compatibilityScore giảm dần" }
+        }
+      }
+    },
+    "/matching/requests": {
+      "post": {
+        "tags": ["Ghép phòng (Matching)"],
+        "summary": "Gửi lời mời ghép phòng (Mutual Privacy Gate)",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateRoommateRequest" } } }
+        },
+        "responses": {
+          "201": { "description": "Gửi lời mời thành công" }
+        }
+      },
+      "get": {
+        "tags": ["Ghép phòng (Matching)"],
+        "summary": "Lấy danh sách lời mời đã gửi và đã nhận",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Danh sách lời mời received và sent" }
+        }
+      }
+    },
+    "/matching/requests/{id}": {
+      "put": {
+        "tags": ["Ghép phòng (Matching)"],
+        "summary": "Phản hồi lời mời ghép phòng (ACCEPT / REJECT)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "description": "ID lời mời" }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RespondRoommateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Xử lý lời mời thành công" }
         }
       }
     },

@@ -41,6 +41,7 @@ async function findReceivedRequests(receiverId) {
     `SELECT rr.id, rr.status, rr.message, rr.created_at AS "createdAt",
             u.id AS "senderId", u.full_name AS "senderName", u.student_id AS "senderStudentId", u.email AS "senderEmail",
             p.faculty AS "senderFaculty", p.cohort AS "senderCohort", p.campus AS "senderCampus",
+            p.phone AS "senderPhone", p.zalo AS "senderZalo",
             COALESCE(r.id, cur_rm.room_id) AS "roomId",
             COALESCE(r.name, cur_r.name) AS "roomName"
      FROM roommate_requests rr
@@ -61,6 +62,7 @@ async function findSentRequests(senderId) {
     `SELECT rr.id, rr.status, rr.message, rr.created_at AS "createdAt",
             u.id AS "receiverId", u.full_name AS "receiverName", u.student_id AS "receiverStudentId", u.email AS "receiverEmail",
             p.faculty AS "receiverFaculty", p.cohort AS "receiverCohort", p.campus AS "receiverCampus",
+            p.phone AS "receiverPhone", p.zalo AS "receiverZalo",
             COALESCE(r.id, cur_rm.room_id) AS "roomId",
             COALESCE(r.name, cur_r.name) AS "roomName"
      FROM roommate_requests rr
@@ -74,6 +76,28 @@ async function findSentRequests(senderId) {
     [senderId]
   );
   return result.rows;
+}
+
+async function findAllRelationshipsForUser(userId) {
+  const result = await query(
+    `SELECT 
+       CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END AS "targetUserId",
+       status
+     FROM roommate_requests
+     WHERE sender_id = $1 OR receiver_id = $1
+     ORDER BY CASE status
+       WHEN 'ACCEPTED' THEN 1
+       WHEN 'PENDING' THEN 2
+       ELSE 3 END`,
+    [userId]
+  );
+  const map = new Map();
+  for (const row of result.rows) {
+    if (!map.has(row.targetUserId)) {
+      map.set(row.targetUserId, row.status);
+    }
+  }
+  return map;
 }
 
 async function findRoomPendingInvitations(roomId) {
@@ -114,6 +138,7 @@ module.exports = {
   create,
   findReceivedRequests,
   findSentRequests,
+  findAllRelationshipsForUser,
   findRoomPendingInvitations,
   updateStatus
 };

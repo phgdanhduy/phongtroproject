@@ -17,6 +17,7 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/roommates', roommateRoutes);
+router.use('/matching', roommateRoutes);
 router.use('/rooms', roomRoutes);
 
 module.exports = router;
