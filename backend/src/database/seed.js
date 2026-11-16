@@ -10,22 +10,19 @@ async function seedData() {
     const hashedPassword = await bcrypt.hash('Password123@', 10);
 
     const users = [
-      { email: 'student1@vnu.edu.vn', fullName: 'Nguyễn Văn A', studentId: '22020001', bankBin: '970422', bankAccount: '0912345671', bankAccountName: 'NGUYEN VAN A' },
-      { email: 'student2@vnu.edu.vn', fullName: 'Trần Văn B', studentId: '22020002', bankBin: '970415', bankAccount: '0987654322', bankAccountName: 'TRAN VAN B' },
-      { email: 'student3@vnu.edu.vn', fullName: 'Lê Thị C', studentId: '22020003', bankBin: '970436', bankAccount: '0901234563', bankAccountName: 'LE THI C' },
-      { email: 'student4@vnu.edu.vn', fullName: 'Phạm Văn D', studentId: '22020004', bankBin: '970407', bankAccount: '0934567894', bankAccountName: 'PHAM VAN D' },
-      { email: 'student5@vnu.edu.vn', fullName: 'Hoàng Minh E', studentId: '22020005', bankBin: '970418', bankAccount: '0978901235', bankAccountName: 'HOANG MINH E' },
+      { email: 'student1@vnu.edu.vn', fullName: 'Nguyễn Văn A', studentId: '22020001' },
+      { email: 'student2@vnu.edu.vn', fullName: 'Trần Văn B', studentId: '22020002' },
+      { email: 'student3@vnu.edu.vn', fullName: 'Lê Thị C', studentId: '22020003' },
+      { email: 'student4@vnu.edu.vn', fullName: 'Phạm Văn D', studentId: '22020004' },
+      { email: 'student5@vnu.edu.vn', fullName: 'Hoàng Minh E', studentId: '22020005' },
     ];
 
     for (const u of users) {
       await query(
-        `INSERT INTO users (email, password, full_name, student_id, bank_bin, bank_account, bank_account_name)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (email) DO UPDATE SET
-           bank_bin = EXCLUDED.bank_bin,
-           bank_account = EXCLUDED.bank_account,
-           bank_account_name = EXCLUDED.bank_account_name`,
-        [u.email, hashedPassword, u.fullName, u.studentId, u.bankBin, u.bankAccount, u.bankAccountName]
+        `INSERT INTO users (email, password, full_name, student_id)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (email) DO NOTHING`,
+        [u.email, hashedPassword, u.fullName, u.studentId]
       );
     }
 
@@ -198,11 +195,6 @@ async function seedData() {
         WHERE id = 1
       `);
     }
-
-    // Đồng bộ lại PostgreSQL SERIAL sequence sau khi insert id thủ công
-    await query(`SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE((SELECT MAX(id) FROM users), 1));`);
-    await query(`SELECT setval(pg_get_serial_sequence('rooms', 'id'), COALESCE((SELECT MAX(id) FROM rooms), 1));`);
-    await query(`SELECT setval(pg_get_serial_sequence('expenses', 'id'), COALESCE((SELECT MAX(id) FROM expenses), 1));`);
 
     console.log('✅ Seed dữ liệu mẫu thành công!');
     console.log('Tài khoản mẫu: student1@vnu.edu.vn / Password123@');

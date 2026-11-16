@@ -1,4 +1,4 @@
-﻿class AppValidationError extends Error {
+class AppValidationError extends Error {
     constructor(message, errorCode = 'INVALID_SPLIT_PAYLOAD') {
         super(message);
         this.statusCode = 400;
@@ -35,7 +35,7 @@ class EqualSplitStrategy extends ISplitStrategy {
         const remainder = totalAmount - baseShare * count;
 
         return roomMembers.map((member, idx) => ({
-            userId: Number(member.userId || member.user_id),
+            userId: member.user_id,
             splitAmount: idx === 0 ? baseShare + remainder : baseShare,
             metadata: { strategy: 'EQUAL' }
         }));
@@ -53,7 +53,7 @@ class CustomSplitStrategy extends ISplitStrategy {
             throw new AppValidationError('Thiếu danh sách phân chia tùy chỉnh (splits)');
         }
 
-        const validMemberIds = new Set(roomMembers.map((m) => Number(m.userId || m.user_id)));
+        const validMemberIds = new Set(roomMembers.map((m) => m.user_id));
         let sum = 0;
 
         const results = splits.map((item) => {
@@ -97,7 +97,7 @@ class MeteredSplitStrategy extends ISplitStrategy {
             throw new AppValidationError('Thiếu danh sách chỉ số (meters) hoặc đơn giá (unitPrice > 0)');
         }
 
-        const validMemberIds = new Set(roomMembers.map((m) => Number(m.userId || m.user_id)));
+        const validMemberIds = new Set(roomMembers.map((m) => m.user_id));
         const price = Number(unitPrice);
         let meteredSum = 0;
         const meteredMap = new Map();
@@ -132,7 +132,7 @@ class MeteredSplitStrategy extends ISplitStrategy {
         const roundingDiff = sharedRemainder - baseShared * roomMembers.length;
 
         return roomMembers.map((member, idx) => {
-            const uid = Number(member.userId || member.user_id);
+            const uid = member.user_id;
             const personal = meteredMap.get(uid) || { oldIndex: 0, newIndex: 0, usage: 0, unitPrice: price, personalCost: 0 };
             const sharedPart = idx === 0 ? baseShared + roundingDiff : baseShared;
 

@@ -8,7 +8,7 @@ const {
   leaveRoom,
   getRoomInvitations
 } = require('../controllers/roomController');
-const { createExpense, updateExpense, deleteExpense, getExpenses, getBalances } = require('../controllers/expenseController');
+const { createExpense, getRoomExpense, getExpenses, updateExpense, deleteExpense, getBalances } = require('../controllers/expenseController');
 const { authenticate } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
@@ -29,7 +29,6 @@ router.post('/:roomId/leave', leaveRoom);
 // Expense routes
 router.post('/:roomId/expenses', createExpense);
 router.put('/:roomId/expenses/:expenseId', updateExpense);
-router.delete('/:roomId/expenses/:expenseId', deleteExpense);
 router.get('/:roomId/expenses', getExpenses);
 router.get('/:roomId/balances', getBalances);
 

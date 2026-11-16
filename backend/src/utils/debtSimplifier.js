@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Sinh URL VietQR động chuẩn Napas 247
  */
 function generateVietQRUrl({ bankBin, bankAccount, accountName, amount, description }) {

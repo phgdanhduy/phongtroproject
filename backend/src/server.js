@@ -1,7 +1,6 @@
 require('dotenv').config();
 const app = require('./app');
 const { initDB, pool } = require('./config/db');
-const { connectRedis } = require('./config/redis');
 
 const PORT = process.env.PORT || 5000;
 
@@ -9,9 +8,6 @@ async function startServer() {
   try {
     console.log('🔄 Đang kết nối tới PostgreSQL...');
     await initDB();
-
-    console.log('🔄 Đang kết nối tới Redis Cache...');
-    await connectRedis();
 
     const server = app.listen(PORT, () => {
       console.log(`🚀 Server đang chạy tại: http://localhost:${PORT}`);

@@ -1,0 +1,216 @@
+require('dotenv').config();
+const bcrypt = require('bcryptjs');
+const { pool, query, initDB } = require('../config/db');
+
+async function seedData() {
+  try {
+    console.log('🌱 Đang khởi tạo dữ liệu mẫu (Seed Data)...');
+    await initDB();
+
+    const hashedPassword = await bcrypt.hash('Password123@', 10);
+
+    const users = [
+      { email: 'student1@vnu.edu.vn', fullName: 'Nguyễn Văn A', studentId: '22020001', bankBin: '970422', bankAccount: '0912345671', bankAccountName: 'NGUYEN VAN A' },
+      { email: 'student2@vnu.edu.vn', fullName: 'Trần Văn B', studentId: '22020002', bankBin: '970415', bankAccount: '0987654322', bankAccountName: 'TRAN VAN B' },
+      { email: 'student3@vnu.edu.vn', fullName: 'Lê Thị C', studentId: '22020003', bankBin: '970436', bankAccount: '0901234563', bankAccountName: 'LE THI C' },
+      { email: 'student4@vnu.edu.vn', fullName: 'Phạm Văn D', studentId: '22020004', bankBin: '970407', bankAccount: '0934567894', bankAccountName: 'PHAM VAN D' },
+      { email: 'student5@vnu.edu.vn', fullName: 'Hoàng Minh E', studentId: '22020005', bankBin: '970418', bankAccount: '0978901235', bankAccountName: 'HOANG MINH E' },
+    ];
+
+    for (const u of users) {
+      await query(
+        `INSERT INTO users (email, password, full_name, student_id, bank_bin, bank_account, bank_account_name)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (email) DO UPDATE SET
+           bank_bin = EXCLUDED.bank_bin,
+           bank_account = EXCLUDED.bank_account,
+           bank_account_name = EXCLUDED.bank_account_name`,
+        [u.email, hashedPassword, u.fullName, u.studentId, u.bankBin, u.bankAccount, u.bankAccountName]
+      );
+    }
+
+    // Seed profiles
+    const profiles = [
+      {
+        email: 'student1@vnu.edu.vn',
+        faculty: 'Công nghệ Thông tin',
+        cohort: 'K67',
+        campus: 'HOA_LAC',
+        locationDetail: 'Ký túc xá QGHN-01',
+        dormBuilding: 'Dom A',
+        district: null,
+        phone: '0912345671',
+        zalo: '0912345671',
+        budget: 1500000,
+        sleepSchedule: 'NIGHT_OWL',
+        cleanliness: 4,
+        noiseLevel: 'QUIET',
+        bio: 'Sinh viên năm 3, sống ngăn nắp, thích không gian yên tĩnh học tập.'
+      },
+      {
+        email: 'student2@vnu.edu.vn',
+        faculty: 'Công nghệ Thông tin',
+        cohort: 'K67',
+        campus: 'HOA_LAC',
+        locationDetail: 'Tòa A2 KTX Hòa Lạc',
+        dormBuilding: 'A2',
+        district: null,
+        phone: '0987654322',
+        zalo: '0987654322',
+        budget: 1500000,
+        sleepSchedule: 'NIGHT_OWL',
+        cleanliness: 4,
+        noiseLevel: 'QUIET',
+        bio: 'Tìm bạn ở chung KTX Hòa Lạc, cùng học CNTT.'
+      },
+      {
+        email: 'student3@vnu.edu.vn',
+        faculty: 'Kinh tế & Quản lý',
+        cohort: 'K68',
+        campus: 'HOA_LAC',
+        locationDetail: 'Tòa A1 KTX Hòa Lạc',
+        dormBuilding: 'A1',
+        district: null,
+        phone: '0901234563',
+        zalo: '0901234563',
+        budget: 1200000,
+        sleepSchedule: 'EARLY',
+        cleanliness: 5,
+        noiseLevel: 'NORMAL',
+        bio: 'Thói quen sinh hoạt điều độ, vui vẻ hòa đồng.'
+      },
+      {
+        email: 'student4@vnu.edu.vn',
+        faculty: 'Trường Ngoại ngữ',
+        cohort: 'K67',
+        campus: 'NOI_THANH',
+        locationDetail: 'Khu vực Cầu Giấy (bán kính < 2km)',
+        dormBuilding: null,
+        district: 'Cầu Giấy',
+        phone: '0934567894',
+        zalo: '0934567894',
+        budget: 2500000,
+        sleepSchedule: 'NIGHT_OWL',
+        cleanliness: 4,
+        noiseLevel: 'NORMAL',
+        bio: 'Tìm bạn ghép thuê chung cư mini quanh Xuân Thủy - Cầu Giấy.'
+      },
+      {
+        email: 'student5@vnu.edu.vn',
+        faculty: 'Khoa Luật',
+        cohort: 'K66',
+        campus: 'NOI_THANH',
+        locationDetail: 'Khu vực Mễ Trì / Nam Từ Liêm',
+        dormBuilding: null,
+        district: 'Nam Từ Liêm',
+        phone: '0978901235',
+        zalo: '0978901235',
+        budget: 2000000,
+        sleepSchedule: 'EARLY',
+        cleanliness: 4,
+        noiseLevel: 'QUIET',
+        bio: 'Cần tìm phòng yên tĩnh ôn thi tốt nghiệp.'
+      }
+    ];
+
+    for (const p of profiles) {
+      const uRes = await query('SELECT id FROM users WHERE email = $1', [p.email]);
+      if (uRes.rows.length > 0) {
+        const userId = uRes.rows[0].id;
+        await query(
+          `INSERT INTO profiles (
+             user_id, faculty, cohort, campus, location_detail, dorm_building, district, phone, zalo, budget,
+             sleep_schedule, cleanliness, noise_level, smoking, has_pet, bio
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, false, false, $14)
+           ON CONFLICT (user_id) DO UPDATE SET
+             faculty = EXCLUDED.faculty,
+             cohort = EXCLUDED.cohort,
+             campus = EXCLUDED.campus,
+             location_detail = EXCLUDED.location_detail,
+             dorm_building = EXCLUDED.dorm_building,
+             district = EXCLUDED.district,
+             phone = EXCLUDED.phone,
+             zalo = EXCLUDED.zalo,
+             budget = EXCLUDED.budget,
+             sleep_schedule = EXCLUDED.sleep_schedule,
+             cleanliness = EXCLUDED.cleanliness,
+             noise_level = EXCLUDED.noise_level,
+             bio = EXCLUDED.bio`,
+          [
+            userId,
+            p.faculty,
+            p.cohort,
+            p.campus,
+            p.locationDetail,
+            p.dormBuilding,
+            p.district,
+            p.phone,
+            p.zalo,
+            p.budget,
+            p.sleepSchedule,
+            p.cleanliness,
+            p.noiseLevel,
+            p.bio
+          ]
+        );
+      }
+    }
+
+    // Seed initial sample room and expense if not existing
+    const roomCheck = await query('SELECT id FROM rooms WHERE id = 1');
+    if (roomCheck.rows.length === 0) {
+      await query(
+        `INSERT INTO rooms (id, name, campus, address_or_block, created_by)
+         OVERRIDING SYSTEM VALUE
+         VALUES (1, 'Phòng 301 KTX Hòa Lạc', 'HOA_LAC', 'Tòa Dom B KTX Hòa Lạc', 1)
+         ON CONFLICT (id) DO UPDATE SET
+           name = EXCLUDED.name,
+           address_or_block = EXCLUDED.address_or_block`
+      );
+      await query(
+        `INSERT INTO room_members (room_id, user_id, role)
+         VALUES (1, 1, 'ADMIN'), (1, 2, 'MEMBER')
+         ON CONFLICT DO NOTHING`
+      );
+      await query(
+        `INSERT INTO expenses (id, room_id, title, amount, category, payer_id)
+         OVERRIDING SYSTEM VALUE
+         VALUES (1, 1, 'Tiền điện sinh hoạt tháng 10/2026', 600000, 'ELECTRICITY', 1)
+         ON CONFLICT (id) DO UPDATE SET
+           title = EXCLUDED.title`
+      );
+      await query(
+        `INSERT INTO expense_splits (expense_id, user_id, split_amount)
+         VALUES (1, 1, 300000), (1, 2, 300000)
+         ON CONFLICT DO NOTHING`
+      );
+    } else {
+      await query(`
+        UPDATE rooms
+        SET name = 'Phòng 301 KTX Hòa Lạc',
+            address_or_block = 'Tòa Dom B KTX Hòa Lạc'
+        WHERE id = 1
+      `);
+      await query(`
+        UPDATE expenses
+        SET title = 'Tiền điện sinh hoạt tháng 10/2026'
+        WHERE id = 1
+      `);
+    }
+
+    console.log('✅ Seed dữ liệu mẫu thành công!');
+    console.log('Tài khoản mẫu: student1@vnu.edu.vn / Password123@');
+    console.log('Tài khoản mẫu: student2@vnu.edu.vn / Password123@');
+  } catch (err) {
+    console.error('❌ Lỗi khi seed dữ liệu:', err);
+  } finally {
+    await pool.end();
+  }
+}
+
+if (require.main === module) {
+  seedData();
+}
+
+module.exports = seedData;

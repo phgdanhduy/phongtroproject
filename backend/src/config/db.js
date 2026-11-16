@@ -26,27 +26,17 @@ async function query(text, params) {
   return res;
 }
 
-async function initDB(retries = 5, delayMs = 2000) {
-  const initSqlPath = path.join(__dirname, '..', 'database', 'init.sql');
-  const sql = fs.existsSync(initSqlPath) ? fs.readFileSync(initSqlPath, 'utf8') : null;
-
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      if (sql) {
-        await pool.query(sql);
-        console.log('✅ Database schema initialized successfully');
-      } else {
-        await pool.query('SELECT 1');
-      }
-      return;
-    } catch (error) {
-      console.warn(`⚠️ Attempt ${attempt}/${retries} to connect DB failed (${error.code || error.message}).`);
-      if (attempt === retries) {
-        console.error('❌ Failed to initialize database schema:', error);
-        throw error;
-      }
-      await new Promise(res => setTimeout(res, delayMs));
+async function initDB() {
+  try {
+    const initSqlPath = path.join(__dirname, '..', 'database', 'init.sql');
+    if (fs.existsSync(initSqlPath)) {
+      const sql = fs.readFileSync(initSqlPath, 'utf8');
+      await pool.query(sql);
+      console.log('✅ Database schema initialized successfully');
     }
+  } catch (error) {
+    console.error('❌ Failed to initialize database schema:', error);
+    throw error;
   }
 }
 

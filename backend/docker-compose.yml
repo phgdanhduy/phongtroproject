@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # 1. Database: PostgreSQL
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: vnu_living_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-vnu_admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vnu_secret_2026}
+      POSTGRES_DB: ${DB_NAME:-vnu_living_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Tự động chạy script SQL tạo bảng khi khởi chạy container lần đầu
+      - ./docs/db-schema-phase1.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # 2. In-Memory Cache: Redis
+  redis:
+    image: redis:7-alpine
+    container_name: vnu_living_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # 3. Backend: Node.js (Express / NestJS)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vnu_living_backend
+    restart: always
+    ports:
+      - "5000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres_db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-vnu_admin}
+      DB_PASSWORD: ${DB_PASSWORD:-vnu_secret_2026}
+      DB_NAME: ${DB_NAME:-vnu_living_db}
+      JWT_SECRET: ${JWT_SECRET:-vnu_jwt_secret_key_phase1}
+      ALLOWED_EMAIL_DOMAIN: vnu.edu.vn
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres_db
+      - redis
+
+  # 4. Frontend (React / Vite / Next.js)
+  frontend:
+    build:
+      context: ./vnu-living-frontend
+      dockerfile: Dockerfile
+    container_name: vnu_living_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
