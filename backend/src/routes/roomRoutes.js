@@ -8,7 +8,7 @@ const {
   leaveRoom,
   getRoomInvitations
 } = require('../controllers/roomController');
-const { createExpense, updateExpense, getExpenses, getBalances } = require('../controllers/expenseController');
+const { createExpense, getRoomExpense, getExpenses, updateExpense, deleteExpense, getBalances } = require('../controllers/expenseController');
 const { authenticate } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
