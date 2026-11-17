@@ -15,9 +15,12 @@ async function createExpense(currentUserId, roomId, {
   amount,
   category = 'LIVING',
   payerId,
-  splitType = 'EQUAL',
+  splitType,
+  splitStrategy,
   splits,
+  participantIds,
   meters,
+  meterDetails,
   unitPrice
 }) {
   if (!roomId || !title || !title.trim() || !amount || Number(amount) <= 0) {
@@ -36,12 +39,15 @@ async function createExpense(currentUserId, roomId, {
 
   const effectivePayerId = payerId ? parseInt(payerId, 10) : currentUserId;
   const numAmount = Number(amount);
+  const effectiveSplitType = (splitStrategy || splitType || 'EQUAL').toUpperCase();
 
   // Áp dụng Strategy Pattern để tính toán số tiền phân chia
-  const strategy = SplitStrategyFactory.getStrategy(splitType);
+  const strategy = SplitStrategyFactory.getStrategy(effectiveSplitType);
   const calculatedSplits = strategy.calculate(numAmount, members, {
     splits,
+    participantIds,
     meters,
+    meterDetails,
     unitPrice
   });
 
@@ -51,7 +57,7 @@ async function createExpense(currentUserId, roomId, {
     amount: numAmount,
     category,
     payerId: effectivePayerId,
-    splitType,
+    splitType: effectiveSplitType,
     calculatedSplits
   });
 
@@ -60,6 +66,7 @@ async function createExpense(currentUserId, roomId, {
 
   return {
     ...newExpense,
+    splitStrategy: effectiveSplitType,
     amount: Number(newExpense.amount),
     splits: calculatedSplits
   };
@@ -72,9 +79,12 @@ async function updateExpense(currentUserId, roomId, expenseId, {
   title,
   amount,
   category,
-  splitType = 'EQUAL',
+  splitType,
+  splitStrategy,
   splits,
+  participantIds,
   meters,
+  meterDetails,
   unitPrice,
   version
 }) {
@@ -98,12 +108,14 @@ async function updateExpense(currentUserId, roomId, expenseId, {
 
   const members = await roomRepository.findMembersByRoomId(roomId);
   const targetAmount = amount ? Number(amount) : Number(existingExpense.amount);
-  const targetSplitType = splitType || existingExpense.splitType || 'EQUAL';
+  const targetSplitType = (splitStrategy || splitType || existingExpense.splitType || 'EQUAL').toUpperCase();
 
   const strategy = SplitStrategyFactory.getStrategy(targetSplitType);
   const calculatedSplits = strategy.calculate(targetAmount, members, {
     splits,
+    participantIds,
     meters,
+    meterDetails,
     unitPrice
   });
 
@@ -123,6 +135,7 @@ async function updateExpense(currentUserId, roomId, expenseId, {
 
   return {
     ...updatedExpense,
+    splitStrategy: targetSplitType,
     amount: Number(updatedExpense.amount),
     splits: calculatedSplits
   };
@@ -145,6 +158,7 @@ async function getExpenses(currentUserId, roomId) {
     amount: Number(row.amount),
     category: row.category,
     splitType: row.splitType || 'EQUAL',
+    splitStrategy: row.splitType || 'EQUAL',
     version: row.version || 1,
     payer: {
       id: row.payerId,
@@ -212,10 +226,19 @@ async function getBalances(currentUserId, roomId) {
 
   // Thuật toán Min-Cash-Flow rút gọn giao dịch tối đa (N - 1) & sinh URL VietQR động
   const simplifiedTransactions = simplifyDebtsWithVietQR(memberBalances, roomName);
+  const settlementTransactions = simplifiedTransactions.map((t) => ({
+    fromUserId: t.fromUser.userId,
+    fromName: t.fromUser.fullName,
+    toUserId: t.toUser.userId,
+    toName: t.toUser.fullName,
+    amount: t.amount,
+    vietQrUrl: t.vietQrUrl
+  }));
 
   const responsePayload = {
     totalRoomExpense,
     memberBalances: memberBalances.map(({ bankBin, bankAccount, ...rest }) => rest),
+    settlementTransactions,
     simplifiedTransactions
   };
 
